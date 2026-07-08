@@ -1,0 +1,41 @@
+services:
+  api:
+    build: .
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./data:/app/data
+    environment:
+      SHOWRUNNER_EPOCH: "2026-01-01T00:00:00+00:00"
+
+  # --- Phase 2/3 services: enable with `docker compose --profile full up` ---
+  postgres:
+    image: postgres:16-alpine
+    profiles: ["full"]
+    environment:
+      POSTGRES_DB: showrunner
+      POSTGRES_USER: showrunner
+      POSTGRES_PASSWORD: showrunner
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
+  redis:
+    image: redis:7-alpine
+    profiles: ["full"]
+
+  minio:
+    image: minio/minio
+    profiles: ["full"]
+    command: server /data --console-address ":9001"
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    environment:
+      MINIO_ROOT_USER: showrunner
+      MINIO_ROOT_PASSWORD: showrunner
+    volumes:
+      - miniodata:/data
+
+volumes:
+  pgdata:
+  miniodata:

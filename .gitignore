@@ -1,0 +1,7 @@
+__pycache__/
+*.pyc
+.venv/
+.env
+data/segments/
+data/catalog.json
+.pytest_cache/

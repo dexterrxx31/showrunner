@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>showrunner — demo channel</title>
+<style>
+  body { font-family: -apple-system, system-ui, sans-serif; background: #111; color: #eee;
+         display: flex; flex-direction: column; align-items: center; padding: 2rem; }
+  video { width: 80%; max-width: 960px; background: #000; border-radius: 8px; }
+  #now { margin-top: 1rem; font-size: 0.95rem; color: #aaa; }
+  #now strong { color: #fff; }
+  progress { width: 240px; height: 6px; vertical-align: middle; }
+</style>
+</head>
+<body>
+<h2>showrunner — demo channel</h2>
+<video id="video" controls autoplay muted></video>
+<div id="now">loading schedule…</div>
+<script src="https://cdn.jsdelivr.net/npm/hls.js@1"></script>
+<script>
+const src = "/channel/demo/playlist.m3u8";
+const video = document.getElementById("video");
+if (Hls.isSupported()) {
+  const hls = new Hls({ liveSyncDurationCount: 3 });
+  hls.loadSource(src);
+  hls.attachMedia(video);
+} else if (video.canPlayType("application/vnd.apple.mpegurl")) {
+  video.src = src; // Safari native HLS
+}
+
+async function refreshNow() {
+  try {
+    const r = await fetch("/channel/demo/now");
+    if (!r.ok) return;
+    const d = await r.json();
+    const pct = Math.round(100 * d.on_air.position_s / d.on_air.duration_s);
+    document.getElementById("now").innerHTML =
+      `on air: <strong>${d.on_air.title}</strong> ` +
+      `<progress max="100" value="${pct}"></progress> ` +
+      `&nbsp;up next: <strong>${d.up_next.title}</strong>`;
+  } catch (e) { /* server restarting */ }
+}
+refreshNow();
+setInterval(refreshNow, 2000);
+</script>
+</body>
+</html>
