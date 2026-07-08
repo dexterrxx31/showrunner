@@ -107,3 +107,73 @@ def test_uneven_segment_durations():
     # 4.15s is inside the second.
     assert tl.window(at(4.15), size=1).segments[0].uri == "b.ts"
     assert tl.target_duration == 5
+
+
+# --- Phase 1 hardening ---------------------------------------------------
+
+
+def test_single_asset_channel_loop_is_discontinuity():
+    # A channel that loops one asset: every restart resets timestamps, so the
+    # loop point is a genuine decode discontinuity.
+    a = Asset(id="a", title="A", segments=tuple(seg("a", i) for i in range(2)))
+    tl = LoopingTimeline([a], epoch=EPOCH)
+    first_loop = tl.window(at(9), size=1)  # global index 2 — first restart
+    assert first_loop.segments[0].discontinuity
+    assert first_loop.media_sequence == 2
+    assert first_loop.discontinuity_sequence == 0  # tag is here, not before it
+    second_loop = tl.window(at(17), size=1)  # global index 4
+    assert second_loop.discontinuity_sequence == 1
+
+
+def test_window_larger_than_catalog(timeline):
+    now = at(3 * timeline.cycle_duration + 1)
+    current = timeline.current_index(now)
+    w = timeline.window(now, size=100)
+    assert len(w.segments) == min(100, current + 1)
+    assert w.media_sequence == max(0, current - 99)
+
+
+def test_first_window_segment_can_carry_discontinuity(timeline):
+    # size=1 landing on a join: the single (first) segment must carry the tag,
+    # and it must NOT be double-counted in the discontinuity sequence.
+    w = timeline.window(at(13), size=1)  # Y's first segment, global index 3
+    assert w.media_sequence == 3
+    assert w.segments[0].asset_id == "y"
+    assert w.segments[0].discontinuity
+    assert w.discontinuity_sequence == 0
+
+
+def test_long_uptime_resolves_exactly(timeline):
+    # ~1 year on air: float seconds must still land on the right segment.
+    one_year = 365 * 24 * 3600
+    cycles = one_year // int(timeline.cycle_duration)
+    w = timeline.window(at(cycles * timeline.cycle_duration + 1), size=1)
+    assert w.segments[0].asset_id == "x"
+    assert w.segments[0].uri == "/segments/x/00000.ts"
+
+
+def test_discontinuity_accounting_invariant(timeline):
+    # The core HLS invariant: for any window, (discontinuity_sequence + the
+    # tags inside the window) equals the total joins up to the current segment.
+    # And media_sequence never goes backwards as the clock advances.
+    prev_media = -1
+    for t in range(0, 300):
+        now = at(t + 0.5)
+        w = timeline.window(now, size=5)
+        current = timeline.current_index(now)
+        in_window = sum(s.discontinuity for s in w.segments)
+        total = w.discontinuity_sequence + in_window
+        assert total == timeline._discontinuities_before(current + 1)
+        assert w.media_sequence >= prev_media
+        prev_media = w.media_sequence
+
+
+def test_consecutive_windows_never_gap(timeline):
+    # Windows one target-duration apart must overlap or abut — never skip a
+    # segment, which would show as a stall in the player.
+    step = timeline.target_duration
+    for t in range(0, 200, step):
+        w1 = timeline.window(at(t), size=5)
+        w2 = timeline.window(at(t + step), size=5)
+        end1 = w1.media_sequence + len(w1.segments)
+        assert w1.media_sequence <= w2.media_sequence <= end1

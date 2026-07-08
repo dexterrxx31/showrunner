@@ -88,10 +88,12 @@ Each phase ends with something that visibly works.
 - [ ] **Phase 0 — Fake-live spike** *(~1 weekend)*
   Loop pre-segmented test assets (FFmpeg `testsrc`) behind a sliding-window
   manifest. **Done when:** VLC and hls.js play the "channel". *(scaffolded)*
-- [ ] **Phase 1 — Hardening the core** *(~1 weekend)*
-  Full unit-test coverage of resolver edge cases: asset boundaries, cycle
-  wrap, midnight/DST (UTC-only), pre-epoch requests, manifest cache.
-  **Done when:** CI green; media/discontinuity sequences provably monotonic.
+- [x] **Phase 1 — Hardening the core** *(~1 weekend)* — **done**
+  Resolver edge cases (single-asset loop, window > catalog, first-segment
+  discontinuity, ~1-year uptime, the discontinuity-accounting invariant,
+  no-gap continuity) plus FastAPI integration tests including proof the
+  manifest cache serves stale within TTL. 26 tests, CI green;
+  media/discontinuity sequences provably monotonic.
 - [ ] **Phase 2 — Ingest pipeline** *(~1–2 weekends)*
   Upload endpoint → Celery → FFmpeg normalize (uniform ladder) → segment →
   MinIO; exact durations + segment lists into the catalog (Postgres).

@@ -64,7 +64,8 @@ where playout engines live or die.
 
 ## Status
 
-Phase 0 (fake-live spike) — see the [roadmap](PLAN.md#5-phased-roadmap).
+Phase 1 (hardened core, 26 tests) complete — see the
+[roadmap](PLAN.md#5-phased-roadmap). Next: the ingest pipeline.
 
 ## License
 
