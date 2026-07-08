@@ -125,6 +125,46 @@ def test_put_rejects_unknown_asset(client):
     assert "ghost" in r.json()["detail"]
 
 
+def test_put_with_ad_breaks_and_epg(client, monkeypatch):
+    r = client.put(
+        "/schedule",
+        json={
+            "filler_asset_id": "ident",
+            "period_seconds": 60,
+            "entries": [{"asset_id": "movie", "start_offset": 0}],
+            "ad_breaks": [{"start_offset": 20, "duration": 10}],
+        },
+    )
+    assert r.status_code == 200 and r.json()["ad_breaks"] == 1
+    assert client.get("/schedule").json()["ad_breaks"] == [
+        {"start_offset": 20.0, "duration": 10.0}
+    ]
+
+    _pin_clock(monkeypatch, 5)
+    channel.reset_timeline()
+    xml = client.get("/epg.xml")
+    assert xml.status_code == 200
+    assert xml.headers["content-type"].startswith("application/xml")
+    assert "<programme" in xml.text
+
+    rows = client.get("/epg.json?hours=1").json()
+    assert any(p["title"] == "Movie" for p in rows)
+
+
+def test_put_rejects_ad_break_outside_period(client):
+    r = client.put(
+        "/schedule",
+        json={
+            "filler_asset_id": "ident",
+            "period_seconds": 60,
+            "entries": [{"asset_id": "movie", "start_offset": 0}],
+            "ad_breaks": [{"start_offset": 55, "duration": 10}],
+        },
+    )
+    assert r.status_code == 422
+    assert any("ad break" in e for e in r.json()["detail"])
+
+
 def test_clear_schedule_reverts_to_catalog_loop(client, monkeypatch):
     client.put(
         "/schedule",

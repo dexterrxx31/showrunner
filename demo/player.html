@@ -4,44 +4,100 @@
 <meta charset="utf-8">
 <title>showrunner — demo channel</title>
 <style>
-  body { font-family: -apple-system, system-ui, sans-serif; background: #111; color: #eee;
-         display: flex; flex-direction: column; align-items: center; padding: 2rem; }
-  video { width: 80%; max-width: 960px; background: #000; border-radius: 8px; }
-  #now { margin-top: 1rem; font-size: 0.95rem; color: #aaa; }
-  #now strong { color: #fff; }
-  progress { width: 240px; height: 6px; vertical-align: middle; }
+  :root { color-scheme: dark; }
+  body { font-family: -apple-system, system-ui, sans-serif; background: #0e0f13; color: #e8e8ea;
+         margin: 0; padding: 2rem; display: flex; flex-direction: column; align-items: center; }
+  h2 { font-weight: 500; margin: 0 0 1rem; }
+  .stage { width: min(90vw, 960px); }
+  video { width: 100%; background: #000; border-radius: 10px; display: block; }
+  .nowbar { display: flex; align-items: center; gap: 1rem; margin-top: 0.75rem;
+            background: #16181f; border-radius: 10px; padding: 0.85rem 1rem; }
+  .live { background: #d64545; color: #fff; font-size: 0.7rem; font-weight: 500;
+          padding: 2px 7px; border-radius: 4px; letter-spacing: 0.05em; }
+  .nowtitle { font-weight: 500; }
+  .nowsub { color: #9a9aa2; font-size: 0.9rem; }
+  progress { width: 100%; height: 5px; margin-top: 0.5rem; }
+  .next { margin-left: auto; text-align: right; color: #9a9aa2; font-size: 0.9rem; }
+  .next b { color: #e8e8ea; font-weight: 500; }
+  .guide { width: min(90vw, 960px); margin-top: 1.25rem; }
+  .guide h3 { font-weight: 500; font-size: 0.95rem; color: #9a9aa2; margin: 0 0 0.5rem; }
+  .row { display: flex; gap: 0.75rem; padding: 0.55rem 0.7rem; border-radius: 8px;
+         align-items: baseline; }
+  .row:nth-child(even) { background: #14161c; }
+  .row.onair { background: #1d2230; }
+  .time { color: #7d7d86; font-variant-numeric: tabular-nums; width: 4.5rem; flex: none; }
+  .prog { font-weight: 500; }
+  .tag { font-size: 0.7rem; color: #7d7d86; border: 1px solid #33343c; border-radius: 4px;
+         padding: 0 5px; margin-left: 0.4rem; }
 </style>
 </head>
 <body>
 <h2>showrunner — demo channel</h2>
-<video id="video" controls autoplay muted></video>
-<div id="now">loading schedule…</div>
+<div class="stage">
+  <video id="video" controls autoplay muted playsinline></video>
+  <div class="nowbar">
+    <span class="live">● LIVE</span>
+    <div style="flex:1; min-width:0;">
+      <div class="nowtitle" id="nowtitle">loading…</div>
+      <progress id="prog" max="100" value="0"></progress>
+    </div>
+    <div class="next">up next<br><b id="nexttitle">—</b></div>
+  </div>
+</div>
+
+<div class="guide">
+  <h3>Up next on the channel</h3>
+  <div id="rows"></div>
+</div>
+
 <script src="https://cdn.jsdelivr.net/npm/hls.js@1"></script>
 <script>
-const src = "/channel/demo/playlist.m3u8";
 const video = document.getElementById("video");
+const src = "/channel/demo/playlist.m3u8";
 if (Hls.isSupported()) {
   const hls = new Hls({ liveSyncDurationCount: 3 });
-  hls.loadSource(src);
-  hls.attachMedia(video);
+  hls.loadSource(src); hls.attachMedia(video);
 } else if (video.canPlayType("application/vnd.apple.mpegurl")) {
-  video.src = src; // Safari native HLS
+  video.src = src;
+}
+
+function fmt(iso) {
+  const d = new Date(iso);
+  return d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
 }
 
 async function refreshNow() {
   try {
-    const r = await fetch("/channel/demo/now");
-    if (!r.ok) return;
-    const d = await r.json();
+    const d = await (await fetch("/channel/demo/now")).json();
     const pct = Math.round(100 * d.on_air.position_s / d.on_air.duration_s);
-    document.getElementById("now").innerHTML =
-      `on air: <strong>${d.on_air.title}</strong> ` +
-      `<progress max="100" value="${pct}"></progress> ` +
-      `&nbsp;up next: <strong>${d.up_next.title}</strong>`;
-  } catch (e) { /* server restarting */ }
+    document.getElementById("nowtitle").textContent = d.on_air.title;
+    document.getElementById("prog").value = isFinite(pct) ? pct : 0;
+    document.getElementById("nexttitle").textContent = d.up_next.title;
+  } catch (e) {}
 }
-refreshNow();
+
+async function refreshGuide() {
+  try {
+    const progs = await (await fetch("/epg.json?hours=3")).json();
+    const now = Date.now();
+    const rows = document.getElementById("rows");
+    rows.innerHTML = "";
+    for (const p of progs.slice(0, 12)) {
+      const onair = new Date(p.start) <= now && now < new Date(p.stop);
+      const row = document.createElement("div");
+      row.className = "row" + (onair ? " onair" : "");
+      row.innerHTML =
+        `<span class="time">${fmt(p.start)}</span>` +
+        `<span class="prog">${p.title}</span>` +
+        (p.filler ? `<span class="tag">filler</span>` : "");
+      rows.appendChild(row);
+    }
+  } catch (e) {}
+}
+
+refreshNow(); refreshGuide();
 setInterval(refreshNow, 2000);
+setInterval(refreshGuide, 15000);
 </script>
 </body>
 </html>

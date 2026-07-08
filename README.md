@@ -52,8 +52,10 @@ docker compose up --build
 | `POST /ingest` | Upload a video (multipart: `file`, `title`) → normalize + segment |
 | `GET /ingest/{job_id}` | Ingest job status |
 | `GET/PUT/DELETE /schedule` | Read / replace / clear the programme schedule |
+| `GET /epg.xml` | Electronic programme guide (XMLTV) |
+| `GET /epg.json` | Programme guide as JSON (used by the demo UI) |
 | `GET /segments/{asset}/{n}.ts` | Segment delivery (nginx/CDN in production) |
-| `GET /demo/` | hls.js demo player |
+| `GET /demo/` | hls.js demo player with live on-air bar + guide |
 
 ## Ingesting your own video
 
@@ -94,6 +96,16 @@ segment-accurate: a programme starts within one segment (~4s) of its target,
 which is what keeps the cycle drift-free. `DELETE /schedule` reverts to
 looping the catalog.
 
+Add `ad_breaks` (offset + duration within the cycle) to emit
+`EXT-X-CUE-OUT`/`EXT-X-CUE-IN` markers in the manifest — the ad avails an
+SSAI/SCTE-35 system replaces with real ads:
+
+```json
+{ "filler_asset_id": "ident-...", "period_seconds": 3600,
+  "entries": [{"asset_id": "movie-...", "start_offset": 1200}],
+  "ad_breaks": [{"start_offset": 1180, "duration": 30}] }
+```
+
 ## Tests
 
 ```bash
@@ -123,8 +135,8 @@ segment is fetchable, and exits non-zero on any violation.
 
 ## Status
 
-Phase 4 (24-hour soak, 56 tests) complete — see the
-[roadmap](PLAN.md#5-phased-roadmap). Next: EPG + ad markers + on-air UI.
+Phase 5 (EPG + ad markers + on-air UI, 68 tests) complete — see the
+[roadmap](PLAN.md#5-phased-roadmap). Next: the AI programming director.
 
 ## License
 

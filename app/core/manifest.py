@@ -22,6 +22,10 @@ def render_media_playlist(window: Window) -> str:
     for seg in window.segments:
         if seg.discontinuity:
             lines.append("#EXT-X-DISCONTINUITY")
+        if seg.cue_out is not None:
+            lines.append(f"#EXT-X-CUE-OUT:{seg.cue_out:.3f}")
+        if seg.cue_in:
+            lines.append("#EXT-X-CUE-IN")
         lines.append(f"#EXT-X-PROGRAM-DATE-TIME:{_pdt(seg.program_datetime)}")
         lines.append(f"#EXTINF:{seg.duration:.3f},{seg.asset_title}")
         lines.append(seg.uri)

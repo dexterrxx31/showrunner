@@ -71,7 +71,7 @@ def load_schedule_from_db(session, catalog: dict[str, Asset]):
     API, but a later catalog deletion could leave a dangling reference.
     """
     from app.core.schedule import ScheduleDef
-    from app.models import ChannelSettingsRow, ScheduleEntryRow
+    from app.models import AdBreakRow, ChannelSettingsRow, ScheduleEntryRow
 
     settings = session.get(ChannelSettingsRow, "demo")
     if settings is None or not settings.filler_asset_id:
@@ -89,4 +89,9 @@ def load_schedule_from_db(session, catalog: dict[str, Asset]):
         entries.append((asset, r.start_offset))
     if not entries:
         return None
-    return ScheduleDef.build(entries, filler, settings.period_seconds)
+
+    ad_breaks = [
+        (r.start_offset, r.duration)
+        for r in session.query(AdBreakRow).order_by(AdBreakRow.start_offset).all()
+    ]
+    return ScheduleDef.build(entries, filler, settings.period_seconds, ad_breaks)

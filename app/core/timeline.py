@@ -38,6 +38,8 @@ class PlayoutSegment:
     asset_title: str
     discontinuity: bool
     program_datetime: datetime
+    cue_out: float | None = None  # ad-break start; value is the avail duration
+    cue_in: bool = False  # return to content after an ad break
 
 
 @dataclass(frozen=True)
@@ -56,6 +58,17 @@ class NowPlaying:
     asset_duration: float
     up_next_id: str
     up_next_title: str
+
+
+@dataclass(frozen=True)
+class ProgrammeBlock:
+    """A contiguous run of one asset, for the electronic programme guide."""
+
+    asset_id: str
+    title: str
+    start_offset: float  # seconds into the cycle
+    duration: float
+    is_filler: bool = False
 
 
 class ChannelNotStarted(Exception):
@@ -180,6 +193,16 @@ class LoopingTimeline:
             up_next_id=up_next.id,
             up_next_title=up_next.title,
         )
+
+    def programme_blocks(self) -> list[ProgrammeBlock]:
+        blocks = []
+        offset = 0.0
+        for asset in self.assets:
+            blocks.append(
+                ProgrammeBlock(asset.id, asset.title, offset, asset.duration)
+            )
+            offset += asset.duration
+        return blocks
 
 
 def utcnow() -> datetime:

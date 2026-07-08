@@ -125,9 +125,13 @@ Each phase ends with something that visibly works.
   optionally decodes the stream with ffmpeg; runs for any duration up to the
   full day. 56 tests. Verified: 24h simulation clean; a live 40s run showed
   zero stalls, sub-segment drift, and successful ffmpeg decode.
-- [ ] **Phase 5 — Broadcast polish** *(~1–2 weekends)*
-  XMLTV EPG endpoint, `EXT-X-CUE-OUT/IN` ad markers, on-air/up-next web UI,
-  README demo GIF.
+- [x] **Phase 5 — Broadcast polish** *(~1–2 weekends)* — **done**
+  XMLTV EPG (`/epg.xml`) plus a JSON view (`/epg.json`) that project the
+  cyclic schedule onto absolute time, filler labelled as such.
+  `EXT-X-CUE-OUT/IN` ad-break markers driven by ad avails on the schedule
+  (`ad_breaks` on `PUT /schedule`), recurring each cycle — the hook for
+  SCTE-35/SSAI. Upgraded demo UI: live on-air bar with progress, up-next, and
+  a rolling programme guide. 68 tests. *(README demo GIF still to capture.)*
 - [ ] **Phase 6 — AI programming director** *(~1–2 weekends)*
   Claude tool-use agent: brief → schedule (see §7). EPG synopses; smart
   filler selection. **Done when:** a one-sentence brief produces a valid,

@@ -15,7 +15,7 @@ import app.routers.channel as channel
 from app.core.catalog import CatalogNotFound, load_catalog_from_db
 from app.core.schedule import validate_schedule
 from app.db import session_scope
-from app.models import ChannelSettingsRow, ScheduleEntryRow
+from app.models import AdBreakRow, ChannelSettingsRow, ScheduleEntryRow
 
 router = APIRouter()
 
@@ -25,10 +25,16 @@ class EntryIn(BaseModel):
     start_offset: float = Field(ge=0)
 
 
+class AdBreakIn(BaseModel):
+    start_offset: float = Field(ge=0)
+    duration: float = Field(gt=0)
+
+
 class ScheduleIn(BaseModel):
     filler_asset_id: str
     period_seconds: float = Field(gt=0)
     entries: list[EntryIn]
+    ad_breaks: list[AdBreakIn] = []
 
 
 def _catalog(session) -> dict:
@@ -49,6 +55,7 @@ def get_schedule() -> dict:
             .all()
         )
         catalog = _catalog(s)
+        ad_breaks = s.query(AdBreakRow).order_by(AdBreakRow.start_offset).all()
         return {
             "filler_asset_id": settings.filler_asset_id if settings else None,
             "period_seconds": settings.period_seconds if settings else None,
@@ -59,6 +66,10 @@ def get_schedule() -> dict:
                     "start_offset": r.start_offset,
                 }
                 for r in rows
+            ],
+            "ad_breaks": [
+                {"start_offset": a.start_offset, "duration": a.duration}
+                for a in ad_breaks
             ],
         }
 
@@ -78,13 +89,15 @@ def put_schedule(body: ScheduleIn) -> dict:
             )
 
         entries = [(catalog[e.asset_id], e.start_offset) for e in body.entries]
+        ad_breaks = [(a.start_offset, a.duration) for a in body.ad_breaks]
         errors = validate_schedule(
-            entries, catalog[body.filler_asset_id], body.period_seconds
+            entries, catalog[body.filler_asset_id], body.period_seconds, ad_breaks
         )
         if errors:
             raise HTTPException(status_code=422, detail=errors)
 
         s.query(ScheduleEntryRow).delete()
+        s.query(AdBreakRow).delete()
         settings = s.get(ChannelSettingsRow, "demo")
         if settings is None:
             settings = ChannelSettingsRow(id="demo")
@@ -93,15 +106,18 @@ def put_schedule(body: ScheduleIn) -> dict:
         settings.period_seconds = body.period_seconds
         for e in body.entries:
             s.add(ScheduleEntryRow(asset_id=e.asset_id, start_offset=e.start_offset))
+        for a in body.ad_breaks:
+            s.add(AdBreakRow(start_offset=a.start_offset, duration=a.duration))
 
     channel.reset_timeline()
-    return {"status": "ok", "entries": len(body.entries)}
+    return {"status": "ok", "entries": len(body.entries), "ad_breaks": len(body.ad_breaks)}
 
 
 @router.delete("/schedule")
 def clear_schedule() -> dict:
     with session_scope() as s:
         s.query(ScheduleEntryRow).delete()
+        s.query(AdBreakRow).delete()
         settings = s.get(ChannelSettingsRow, "demo")
         if settings is not None:
             settings.filler_asset_id = None

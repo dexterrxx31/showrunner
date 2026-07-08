@@ -62,6 +62,14 @@ class ScheduleEntryRow(Base):
     start_offset: Mapped[float] = mapped_column(Float, nullable=False)
 
 
+class AdBreakRow(Base):
+    __tablename__ = "ad_breaks"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    start_offset: Mapped[float] = mapped_column(Float, nullable=False)
+    duration: Mapped[float] = mapped_column(Float, nullable=False)
+
+
 class IngestJobRow(Base):
     __tablename__ = "ingest_jobs"
 

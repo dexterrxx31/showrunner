@@ -25,6 +25,7 @@ from app.core.timeline import (
     ChannelNotStarted,
     NowPlaying,
     PlayoutSegment,
+    ProgrammeBlock,
     Window,
 )
 
@@ -38,15 +39,24 @@ class ScheduleDef:
     entries: tuple[tuple[Asset, float], ...]  # (asset, target_offset_seconds), sorted
     filler: Asset
     period: float
+    ad_breaks: tuple[tuple[float, float], ...] = ()  # (offset, duration)
 
     @staticmethod
-    def build(entries, filler: Asset, period: float) -> "ScheduleDef":
+    def build(entries, filler: Asset, period: float, ad_breaks=()) -> "ScheduleDef":
         ordered = tuple(sorted(entries, key=lambda e: e[1]))
-        return ScheduleDef(entries=ordered, filler=filler, period=period)
+        return ScheduleDef(
+            entries=ordered,
+            filler=filler,
+            period=period,
+            ad_breaks=tuple(sorted(ad_breaks)),
+        )
 
 
 def validate_schedule(
-    entries: list[tuple[Asset, float]], filler: Asset | None, period: float
+    entries: list[tuple[Asset, float]],
+    filler: Asset | None,
+    period: float,
+    ad_breaks: list[tuple[float, float]] | None = None,
 ) -> list[str]:
     """Return human-readable violations; empty list means the schedule is valid.
 
@@ -75,6 +85,11 @@ def validate_schedule(
             )
         prev_end = max(prev_end, offset + asset.duration)
         prev_title = asset.title
+    for i, (offset, duration) in enumerate(ad_breaks or []):
+        if duration <= 0:
+            errors.append(f"ad break {i + 1} has a non-positive duration")
+        if offset < -EPS or offset + duration > period + EPS:
+            errors.append(f"ad break {i + 1} falls outside the cycle period")
     return errors
 
 
@@ -115,6 +130,22 @@ class ScheduledTimeline:
         self._internal_disc, self._wrap_disc = self._discontinuity_flags()
         self._internal_total = sum(self._internal_disc)
         self._blocks, self._block_starts = self._build_blocks()
+        self._cue_out, self._cue_in = self._build_cue_points(schedule.ad_breaks)
+
+    def _build_cue_points(self, ad_breaks) -> tuple[dict[int, float], set[int]]:
+        # Map each ad break to the cycle segment where the avail opens (CUE-OUT,
+        # carrying the avail duration) and where content resumes (CUE-IN). These
+        # recur every cycle, so an SSAI system sees the same avails each loop.
+        cue_out: dict[int, float] = {}
+        cue_in: set[int] = set()
+        for offset, duration in ad_breaks:
+            out_idx = bisect.bisect_left(self._starts, offset - EPS)
+            if out_idx < self._n:
+                cue_out[out_idx] = duration
+            in_idx = bisect.bisect_left(self._starts, offset + duration - EPS)
+            if in_idx < self._n:
+                cue_in.add(in_idx)
+        return cue_out, cue_in
 
     # -- construction ------------------------------------------------------
 
@@ -222,7 +253,8 @@ class ScheduledTimeline:
         first = max(0, current - size + 1)
         segments = []
         for g in range(first, current + 1):
-            c = self._cycle[g % self._n]
+            idx = g % self._n
+            c = self._cycle[idx]
             segments.append(
                 PlayoutSegment(
                     uri=c.uri,
@@ -232,6 +264,8 @@ class ScheduledTimeline:
                     discontinuity=self._discontinuity(g),
                     program_datetime=self.epoch
                     + timedelta(seconds=self._start_offset(g)),
+                    cue_out=self._cue_out.get(idx),
+                    cue_in=idx in self._cue_in,
                 )
             )
         return Window(
@@ -257,3 +291,23 @@ class ScheduledTimeline:
             up_next_id=nxt.asset_id,
             up_next_title=nxt.title,
         )
+
+    def programme_blocks(self) -> list[ProgrammeBlock]:
+        # Merge consecutive same-asset segments (across filler loop restarts) so
+        # a gap of looped filler shows as one guide entry, not many.
+        blocks: list[ProgrammeBlock] = []
+        i = 0
+        n = self._n
+        filler_id = self.schedule.filler.id
+        while i < n:
+            aid = self._cycle[i].asset_id
+            title = self._cycle[i].asset_title
+            start = self._starts[i]
+            duration = 0.0
+            while i < n and self._cycle[i].asset_id == aid:
+                duration += self._cycle[i].duration
+                i += 1
+            blocks.append(
+                ProgrammeBlock(aid, title, start, duration, is_filler=(aid == filler_id))
+            )
+        return blocks
