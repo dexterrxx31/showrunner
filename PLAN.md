@@ -142,9 +142,18 @@ Each phase ends with something that visibly works.
   like "family-friendly until 21:00" be grounded. The client is injected, so
   the whole loop — including self-correction — is covered in CI by a scripted
   fake with no API key (live use needs `ANTHROPIC_API_KEY`). 77 tests.
-- [ ] **Phase 7 — Stretch**
-  Go rewrite of the manifest origin + published benchmark; or true-encode
-  mode (continuous FFmpeg with burned-in branding); or multi-channel.
+- [x] **Phase 7 — Go manifest origin + benchmark** — **done**
+  Control-plane / data-plane split: Python compiles the schedule into a cycle
+  snapshot (`app/core/snapshot.py`); a standalone Go service (`go-origin/`)
+  serves manifests from it statelessly, re-implementing only the hot path
+  (`render_media_playlist`) — validated byte-for-byte against the canonical
+  Python renderer by 126 golden cases generated from it. Measured with `wrk`:
+  **~8.9k req/s (Python/uvicorn) → ~147k req/s (Go), ~16× throughput**,
+  p50 latency 7.6ms → 0.5ms. CI runs both the Python suite and `go test`.
+  81 Python tests + the Go golden test.
+
+Remaining stretch ideas (not started): true-encode mode (continuous FFmpeg
+with burned-in branding), multi-channel, and the README demo GIF.
 
 ## 6. Hard problems & mitigations
 

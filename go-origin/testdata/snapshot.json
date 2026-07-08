@@ -1,0 +1,318 @@
+{
+  "epoch": "2026-01-01T00:00:00+00:00",
+  "cycle_duration": 123.84,
+  "target_duration": 4,
+  "wrap_disc": 1,
+  "segments": [
+    {
+      "uri": "/segments/morning/00000.ts",
+      "duration": 4.0,
+      "asset_id": "morning",
+      "asset_title": "Morning Show",
+      "start_offset": 0.0,
+      "internal_disc": 0,
+      "cue_out": null,
+      "cue_in": false
+    },
+    {
+      "uri": "/segments/morning/00001.ts",
+      "duration": 4.0,
+      "asset_id": "morning",
+      "asset_title": "Morning Show",
+      "start_offset": 4.0,
+      "internal_disc": 0,
+      "cue_out": null,
+      "cue_in": false
+    },
+    {
+      "uri": "/segments/morning/00002.ts",
+      "duration": 3.84,
+      "asset_id": "morning",
+      "asset_title": "Morning Show",
+      "start_offset": 8.0,
+      "internal_disc": 0,
+      "cue_out": null,
+      "cue_in": false
+    },
+    {
+      "uri": "/segments/ident/00000.ts",
+      "duration": 4.0,
+      "asset_id": "ident",
+      "asset_title": "Channel Ident",
+      "start_offset": 11.84,
+      "internal_disc": 1,
+      "cue_out": null,
+      "cue_in": false
+    },
+    {
+      "uri": "/segments/ident/00000.ts",
+      "duration": 4.0,
+      "asset_id": "ident",
+      "asset_title": "Channel Ident",
+      "start_offset": 15.84,
+      "internal_disc": 1,
+      "cue_out": null,
+      "cue_in": false
+    },
+    {
+      "uri": "/segments/ident/00000.ts",
+      "duration": 4.0,
+      "asset_id": "ident",
+      "asset_title": "Channel Ident",
+      "start_offset": 19.84,
+      "internal_disc": 1,
+      "cue_out": null,
+      "cue_in": false
+    },
+    {
+      "uri": "/segments/ident/00000.ts",
+      "duration": 4.0,
+      "asset_id": "ident",
+      "asset_title": "Channel Ident",
+      "start_offset": 23.84,
+      "internal_disc": 1,
+      "cue_out": null,
+      "cue_in": false
+    },
+    {
+      "uri": "/segments/ident/00000.ts",
+      "duration": 4.0,
+      "asset_id": "ident",
+      "asset_title": "Channel Ident",
+      "start_offset": 27.84,
+      "internal_disc": 1,
+      "cue_out": null,
+      "cue_in": false
+    },
+    {
+      "uri": "/segments/ident/00000.ts",
+      "duration": 4.0,
+      "asset_id": "ident",
+      "asset_title": "Channel Ident",
+      "start_offset": 31.84,
+      "internal_disc": 1,
+      "cue_out": null,
+      "cue_in": false
+    },
+    {
+      "uri": "/segments/ident/00000.ts",
+      "duration": 4.0,
+      "asset_id": "ident",
+      "asset_title": "Channel Ident",
+      "start_offset": 35.84,
+      "internal_disc": 1,
+      "cue_out": null,
+      "cue_in": false
+    },
+    {
+      "uri": "/segments/ident/00000.ts",
+      "duration": 4.0,
+      "asset_id": "ident",
+      "asset_title": "Channel Ident",
+      "start_offset": 39.84,
+      "internal_disc": 1,
+      "cue_out": 12.0,
+      "cue_in": false
+    },
+    {
+      "uri": "/segments/feature/00000.ts",
+      "duration": 4.0,
+      "asset_id": "feature",
+      "asset_title": "Feature Film",
+      "start_offset": 43.84,
+      "internal_disc": 1,
+      "cue_out": null,
+      "cue_in": false
+    },
+    {
+      "uri": "/segments/feature/00001.ts",
+      "duration": 4.0,
+      "asset_id": "feature",
+      "asset_title": "Feature Film",
+      "start_offset": 47.84,
+      "internal_disc": 0,
+      "cue_out": null,
+      "cue_in": false
+    },
+    {
+      "uri": "/segments/feature/00002.ts",
+      "duration": 4.0,
+      "asset_id": "feature",
+      "asset_title": "Feature Film",
+      "start_offset": 51.84,
+      "internal_disc": 0,
+      "cue_out": null,
+      "cue_in": true
+    },
+    {
+      "uri": "/segments/feature/00003.ts",
+      "duration": 4.0,
+      "asset_id": "feature",
+      "asset_title": "Feature Film",
+      "start_offset": 55.84,
+      "internal_disc": 0,
+      "cue_out": null,
+      "cue_in": false
+    },
+    {
+      "uri": "/segments/feature/00004.ts",
+      "duration": 4.0,
+      "asset_id": "feature",
+      "asset_title": "Feature Film",
+      "start_offset": 59.84,
+      "internal_disc": 0,
+      "cue_out": null,
+      "cue_in": false
+    },
+    {
+      "uri": "/segments/ident/00000.ts",
+      "duration": 4.0,
+      "asset_id": "ident",
+      "asset_title": "Channel Ident",
+      "start_offset": 63.84,
+      "internal_disc": 1,
+      "cue_out": null,
+      "cue_in": false
+    },
+    {
+      "uri": "/segments/ident/00000.ts",
+      "duration": 4.0,
+      "asset_id": "ident",
+      "asset_title": "Channel Ident",
+      "start_offset": 67.84,
+      "internal_disc": 1,
+      "cue_out": null,
+      "cue_in": false
+    },
+    {
+      "uri": "/segments/ident/00000.ts",
+      "duration": 4.0,
+      "asset_id": "ident",
+      "asset_title": "Channel Ident",
+      "start_offset": 71.84,
+      "internal_disc": 1,
+      "cue_out": null,
+      "cue_in": false
+    },
+    {
+      "uri": "/segments/ident/00000.ts",
+      "duration": 4.0,
+      "asset_id": "ident",
+      "asset_title": "Channel Ident",
+      "start_offset": 75.84,
+      "internal_disc": 1,
+      "cue_out": null,
+      "cue_in": false
+    },
+    {
+      "uri": "/segments/ident/00000.ts",
+      "duration": 4.0,
+      "asset_id": "ident",
+      "asset_title": "Channel Ident",
+      "start_offset": 79.84,
+      "internal_disc": 1,
+      "cue_out": null,
+      "cue_in": false
+    },
+    {
+      "uri": "/segments/ident/00000.ts",
+      "duration": 4.0,
+      "asset_id": "ident",
+      "asset_title": "Channel Ident",
+      "start_offset": 83.84,
+      "internal_disc": 1,
+      "cue_out": null,
+      "cue_in": false
+    },
+    {
+      "uri": "/segments/ident/00000.ts",
+      "duration": 4.0,
+      "asset_id": "ident",
+      "asset_title": "Channel Ident",
+      "start_offset": 87.84,
+      "internal_disc": 1,
+      "cue_out": null,
+      "cue_in": false
+    },
+    {
+      "uri": "/segments/ident/00000.ts",
+      "duration": 4.0,
+      "asset_id": "ident",
+      "asset_title": "Channel Ident",
+      "start_offset": 91.84,
+      "internal_disc": 1,
+      "cue_out": null,
+      "cue_in": false
+    },
+    {
+      "uri": "/segments/ident/00000.ts",
+      "duration": 4.0,
+      "asset_id": "ident",
+      "asset_title": "Channel Ident",
+      "start_offset": 95.84,
+      "internal_disc": 1,
+      "cue_out": null,
+      "cue_in": false
+    },
+    {
+      "uri": "/segments/ident/00000.ts",
+      "duration": 4.0,
+      "asset_id": "ident",
+      "asset_title": "Channel Ident",
+      "start_offset": 99.84,
+      "internal_disc": 1,
+      "cue_out": null,
+      "cue_in": false
+    },
+    {
+      "uri": "/segments/ident/00000.ts",
+      "duration": 4.0,
+      "asset_id": "ident",
+      "asset_title": "Channel Ident",
+      "start_offset": 103.84,
+      "internal_disc": 1,
+      "cue_out": null,
+      "cue_in": false
+    },
+    {
+      "uri": "/segments/ident/00000.ts",
+      "duration": 4.0,
+      "asset_id": "ident",
+      "asset_title": "Channel Ident",
+      "start_offset": 107.84,
+      "internal_disc": 1,
+      "cue_out": null,
+      "cue_in": false
+    },
+    {
+      "uri": "/segments/ident/00000.ts",
+      "duration": 4.0,
+      "asset_id": "ident",
+      "asset_title": "Channel Ident",
+      "start_offset": 111.84,
+      "internal_disc": 1,
+      "cue_out": null,
+      "cue_in": false
+    },
+    {
+      "uri": "/segments/ident/00000.ts",
+      "duration": 4.0,
+      "asset_id": "ident",
+      "asset_title": "Channel Ident",
+      "start_offset": 115.84,
+      "internal_disc": 1,
+      "cue_out": null,
+      "cue_in": false
+    },
+    {
+      "uri": "/segments/ident/00000.ts",
+      "duration": 4.0,
+      "asset_id": "ident",
+      "asset_title": "Channel Ident",
+      "start_offset": 119.84,
+      "internal_disc": 1,
+      "cue_out": null,
+      "cue_in": false
+    }
+  ]
+}

@@ -139,6 +139,33 @@ violations for Claude to fix. The engine only ever airs a schedule that passed
 validation — the model proposes, deterministic validation disposes. The
 accepted schedule is persisted and goes live immediately.
 
+## Performance: the Go manifest origin
+
+The manifest is the hot path — every viewer polls it every few seconds — but
+it's a pure function of the wall clock, so it can be served by a stateless
+origin with no database or scheduler. `showrunner` splits along that line:
+
+- **Control plane (Python)** owns the hard, infrequent work — ingest,
+  scheduling, discontinuity resolution — and compiles the schedule into a
+  **cycle snapshot** (`python scripts/export_snapshot.py`).
+- **Data plane (Go, `go-origin/`)** serves manifests from the snapshot with
+  pure arithmetic, re-implementing only `render_media_playlist`.
+
+The Go origin is validated **byte-for-byte** against the canonical Python
+renderer: `scripts/gen_go_fixtures.py` emits 126 golden manifests from the
+Python code, and `go test` asserts the Go output matches every one.
+
+Throughput serving the same channel (`wrk -t4 -c64 -d10s`, Apple Silicon, one
+process each):
+
+| Origin | Requests/sec | p50 latency |
+|---|---:|---:|
+| Python — FastAPI + uvicorn (1 worker) | ~8,900 | 7.6 ms |
+| Go — net/http | ~147,000 | 0.5 ms |
+
+**~16× throughput**, reproducible with `./scripts/bench.sh`. (uvicorn scales
+with more workers, ~1 per core; the Go process scales across cores on its own.)
+
 ## Soak testing
 
 The channel is a pure function of the wall clock, so 24 hours of playout can be
@@ -158,9 +185,9 @@ segment is fetchable, and exits non-zero on any violation.
 
 ## Status
 
-Phase 6 (AI programming director, 77 tests) complete — see the
-[roadmap](PLAN.md#5-phased-roadmap). Next: the Go manifest-origin rewrite +
-benchmark.
+All seven phases of the [roadmap](PLAN.md#5-phased-roadmap) complete — from a
+fake-live spike to an AI-programmed channel with a Go manifest origin. 81
+Python tests + a Go golden test, CI green on both.
 
 ## License
 

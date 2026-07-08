@@ -8,3 +8,5 @@ data/uploads/
 data/work/
 data/*.db
 .pytest_cache/
+go-origin/origin
+go-origin/*.test

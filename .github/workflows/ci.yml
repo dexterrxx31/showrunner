@@ -17,3 +17,16 @@ jobs:
         run: sudo apt-get update && sudo apt-get install -y ffmpeg
       - run: pip install -r requirements.txt -r requirements-dev.txt
       - run: pytest -v
+
+  go-origin:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.22"
+      - name: Test Go origin against the Python golden fixtures
+        working-directory: go-origin
+        run: |
+          go vet ./...
+          go test -v ./...
