@@ -49,8 +49,27 @@ docker compose up --build
 |---|---|
 | `GET /channel/demo/playlist.m3u8` | Live HLS media playlist (sliding window) |
 | `GET /channel/demo/now` | On-air / up-next JSON |
+| `POST /ingest` | Upload a video (multipart: `file`, `title`) → normalize + segment |
+| `GET /ingest/{job_id}` | Ingest job status |
 | `GET /segments/{asset}/{n}.ts` | Segment delivery (nginx/CDN in production) |
 | `GET /demo/` | hls.js demo player |
+
+## Ingesting your own video
+
+By default the channel plays the JSON demo catalog. To ingest real files into
+the database-backed catalog and have the channel air them:
+
+```bash
+export SHOWRUNNER_CATALOG_SOURCE=db      # channel reads ingested assets
+uvicorn app.main:app --reload
+
+curl -F "title=Late Night Movie" -F "file=@movie.mp4" http://localhost:8000/ingest
+# → {"job_id": "...", "asset_id": "late-night-movie-xxxxxxxx", "status": "pending"}
+```
+
+Ingest runs in-process by default (no broker needed). Set `SHOWRUNNER_BROKER`
+to route it to a Celery worker, and `SHOWRUNNER_STORAGE=s3` to store segments
+in MinIO/S3 — see `docker compose --profile full up`.
 
 ## Tests
 
@@ -64,8 +83,8 @@ where playout engines live or die.
 
 ## Status
 
-Phase 1 (hardened core, 26 tests) complete — see the
-[roadmap](PLAN.md#5-phased-roadmap). Next: the ingest pipeline.
+Phase 2 (ingest pipeline, 36 tests) complete — see the
+[roadmap](PLAN.md#5-phased-roadmap). Next: the real scheduler.
 
 ## License
 

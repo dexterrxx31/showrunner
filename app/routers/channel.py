@@ -12,7 +12,11 @@ import time
 from fastapi import APIRouter, HTTPException, Response
 
 from app import config
-from app.core.catalog import CatalogNotFound, load_catalog
+from app.core.catalog import (
+    CatalogNotFound,
+    load_catalog,
+    load_catalog_from_db,
+)
 from app.core.manifest import render_media_playlist
 from app.core.timeline import ChannelNotStarted, LoopingTimeline, utcnow
 
@@ -22,11 +26,27 @@ _timeline: LoopingTimeline | None = None
 _manifest_cache: tuple[float, str] | None = None
 
 
+def reset_timeline() -> None:
+    """Drop the cached timeline (and manifest) so a new catalog is picked up."""
+    global _timeline, _manifest_cache
+    _timeline = None
+    _manifest_cache = None
+
+
+def _load_assets():
+    if config.CATALOG_SOURCE == "db":
+        from app.db import session_scope
+
+        with session_scope() as session:
+            return load_catalog_from_db(session)
+    return load_catalog(config.CATALOG_PATH)
+
+
 def get_timeline() -> LoopingTimeline:
     global _timeline
     if _timeline is None:
         try:
-            assets = load_catalog(config.CATALOG_PATH)
+            assets = _load_assets()
         except CatalogNotFound as e:
             raise HTTPException(status_code=503, detail=str(e))
         _timeline = LoopingTimeline(assets, epoch=config.CHANNEL_EPOCH)

@@ -34,3 +34,29 @@ def load_catalog(path: str | Path) -> list[Asset]:
             raise ValueError(f"asset {a['id']} has no segments")
         assets.append(Asset(id=a["id"], title=a["title"], segments=segments))
     return assets
+
+
+def load_catalog_from_db(session) -> list[Asset]:
+    """Build the channel's asset list from ingested catalog rows.
+
+    Order is `position` then `created_at` — a stand-in for real programming
+    until the Phase-3 scheduler owns ordering. Assets with no segments are
+    skipped (an ingest that failed mid-way leaves nothing playable).
+    """
+    from app.models import AssetRow
+
+    rows = (
+        session.query(AssetRow)
+        .order_by(AssetRow.position, AssetRow.created_at)
+        .all()
+    )
+    assets = []
+    for r in rows:
+        segments = tuple(
+            Segment(uri=s.uri, duration=s.duration) for s in r.segments
+        )
+        if segments:
+            assets.append(Asset(id=r.id, title=r.title, segments=segments))
+    if not assets:
+        raise CatalogNotFound("no assets ingested yet — POST a file to /ingest")
+    return assets

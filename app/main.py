@@ -1,3 +1,4 @@
+from contextlib import asynccontextmanager
 from pathlib import Path
 
 from fastapi import FastAPI
@@ -6,18 +7,28 @@ from fastapi.responses import RedirectResponse
 from fastapi.staticfiles import StaticFiles
 
 from app import config
+from app.db import init_db
 from app.routers.channel import router as channel_router
+from app.routers.ingest import router as ingest_router
 
-app = FastAPI(title="showrunner", version="0.1.0")
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    init_db()
+    yield
+
+
+app = FastAPI(title="showrunner", version="0.2.0", lifespan=lifespan)
 
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
-    allow_methods=["GET"],
+    allow_methods=["GET", "POST"],
     allow_headers=["*"],
 )
 
 app.include_router(channel_router)
+app.include_router(ingest_router)
 
 # Phase 0: segments served by the app for convenience.
 # Production: nginx/CDN serves these; app never touches segment bytes.

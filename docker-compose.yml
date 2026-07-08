@@ -7,8 +7,27 @@ services:
       - ./data:/app/data
     environment:
       SHOWRUNNER_EPOCH: "2026-01-01T00:00:00+00:00"
+      # Phase 2: switch the channel to the ingested DB catalog when running full.
+      SHOWRUNNER_DB: ${SHOWRUNNER_DB:-}
+      SHOWRUNNER_CATALOG_SOURCE: ${SHOWRUNNER_CATALOG_SOURCE:-json}
+      SHOWRUNNER_BROKER: ${SHOWRUNNER_BROKER:-}
 
-  # --- Phase 2/3 services: enable with `docker compose --profile full up` ---
+  # --- Phase 2/3 services: `docker compose --profile full up` ---------------
+  worker:
+    build: .
+    profiles: ["full"]
+    command: celery -A app.ingest.tasks.celery_app worker --loglevel=info
+    volumes:
+      - ./data:/app/data
+    environment:
+      SHOWRUNNER_DB: postgresql+psycopg://showrunner:showrunner@postgres:5432/showrunner
+      SHOWRUNNER_BROKER: redis://redis:6379/0
+      SHOWRUNNER_STORAGE: s3
+      SHOWRUNNER_S3_ENDPOINT: http://minio:9000
+      SHOWRUNNER_S3_ACCESS_KEY: showrunner
+      SHOWRUNNER_S3_SECRET_KEY: showrunner
+    depends_on: [postgres, redis, minio]
+
   postgres:
     image: postgres:16-alpine
     profiles: ["full"]

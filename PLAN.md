@@ -94,10 +94,14 @@ Each phase ends with something that visibly works.
   no-gap continuity) plus FastAPI integration tests including proof the
   manifest cache serves stale within TTL. 26 tests, CI green;
   media/discontinuity sequences provably monotonic.
-- [ ] **Phase 2 — Ingest pipeline** *(~1–2 weekends)*
-  Upload endpoint → Celery → FFmpeg normalize (uniform ladder) → segment →
-  MinIO; exact durations + segment lists into the catalog (Postgres).
-  **Done when:** three different source files become interchangeable segment sets.
+- [x] **Phase 2 — Ingest pipeline** *(~1–2 weekends)* — **done**
+  Upload endpoint → FFmpeg normalize (uniform ladder) → segment → storage →
+  exact ffprobe'd durations + segment lists into the catalog. SQLAlchemy
+  catalog (SQLite in dev, Postgres in prod), pluggable segment store
+  (local disk or S3/MinIO), and a task queue that runs eagerly in-process
+  with no broker or on a Celery worker when `SHOWRUNNER_BROKER` is set.
+  36 tests including a real-FFmpeg check that three different source files
+  become interchangeable segment sets (identical codec/resolution/fps).
 - [ ] **Phase 3 — Real scheduler** *(~1–2 weekends)*
   Schedule CRUD (Postgres), timeline resolver over scheduled entries + filler
   policy, mid-air edit semantics (immutable served window; edits apply from
