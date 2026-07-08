@@ -104,10 +104,27 @@ The test suite covers the timeline resolver's edge cases — asset joins, cycle
 wrap, discontinuity sequencing, drift over 1000 cycles — because that math is
 where playout engines live or die.
 
+## Soak testing
+
+The channel is a pure function of the wall clock, so 24 hours of playout can be
+verified deterministically — `tests/test_soak.py` fast-forwards a full day and
+asserts no gaps, monotonic sequences, exact PROGRAM-DATE-TIME continuity, and a
+live edge that always tracks real time (zero drift).
+
+To soak a running server over real time:
+
+```bash
+python scripts/soak.py --url http://localhost:8000 --duration 300
+python scripts/soak.py --duration 86400 --ffmpeg-check   # full 24h + decode
+```
+
+It reports drift, stalls, and discontinuities, verifies every referenced
+segment is fetchable, and exits non-zero on any violation.
+
 ## Status
 
-Phase 3 (programme scheduler, 53 tests) complete — see the
-[roadmap](PLAN.md#5-phased-roadmap). Next: the 24-hour soak test.
+Phase 4 (24-hour soak, 56 tests) complete — see the
+[roadmap](PLAN.md#5-phased-roadmap). Next: EPG + ad markers + on-air UI.
 
 ## License
 

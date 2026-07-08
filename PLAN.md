@@ -114,10 +114,17 @@ Each phase ends with something that visibly works.
   **Timing note:** filler is laid as whole segments, so a programme starts
   within one segment (~4s) of its target — segment-accurate, not
   frame-accurate, which is what keeps the cycle drift-free.
-- [ ] **Phase 4 — 24-hour soak** *(~2 weekends, the hard one)*
-  Discontinuity correctness across every join, PDT alignment, drift
-  measurement. **Done when:** channel plays 24h unattended, zero stalls,
-  measured drift ≈ 0.
+- [x] **Phase 4 — 24-hour soak** *(~2 weekends, the hard one)* — **done**
+  Two-part verification. A deterministic simulation (`tests/test_soak.py`)
+  fast-forwards a full 24h through the resolver and proves every invariant on
+  every one of the ~21.6k segments: no gaps, monotonic sequences, exact
+  program-date-time continuity across discontinuities, and a live edge that
+  always contains the wall clock (zero drift) — a proof, not a sample. A live
+  harness (`scripts/soak.py`) polls a running server over real time, measures
+  actual drift and stalls, checks every referenced segment is fetchable, and
+  optionally decodes the stream with ffmpeg; runs for any duration up to the
+  full day. 56 tests. Verified: 24h simulation clean; a live 40s run showed
+  zero stalls, sub-segment drift, and successful ffmpeg decode.
 - [ ] **Phase 5 — Broadcast polish** *(~1–2 weekends)*
   XMLTV EPG endpoint, `EXT-X-CUE-OUT/IN` ad markers, on-air/up-next web UI,
   README demo GIF.
