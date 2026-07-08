@@ -60,3 +60,33 @@ def load_catalog_from_db(session) -> list[Asset]:
     if not assets:
         raise CatalogNotFound("no assets ingested yet — POST a file to /ingest")
     return assets
+
+
+def load_schedule_from_db(session, catalog: dict[str, Asset]):
+    """Build a ScheduleDef from DB rows, or return None if none is defined.
+
+    Returns None (channel falls back to looping the catalog) when there are no
+    entries, no filler is set, or a referenced asset is missing — the schedule
+    endpoint's validator prevents the last case for schedules created via the
+    API, but a later catalog deletion could leave a dangling reference.
+    """
+    from app.core.schedule import ScheduleDef
+    from app.models import ChannelSettingsRow, ScheduleEntryRow
+
+    settings = session.get(ChannelSettingsRow, "demo")
+    if settings is None or not settings.filler_asset_id:
+        return None
+    filler = catalog.get(settings.filler_asset_id)
+    if filler is None:
+        return None
+
+    rows = session.query(ScheduleEntryRow).order_by(ScheduleEntryRow.start_offset).all()
+    entries = []
+    for r in rows:
+        asset = catalog.get(r.asset_id)
+        if asset is None:
+            return None
+        entries.append((asset, r.start_offset))
+    if not entries:
+        return None
+    return ScheduleDef.build(entries, filler, settings.period_seconds)

@@ -16,40 +16,49 @@ from app.core.catalog import (
     CatalogNotFound,
     load_catalog,
     load_catalog_from_db,
+    load_schedule_from_db,
 )
 from app.core.manifest import render_media_playlist
+from app.core.schedule import ScheduledTimeline
 from app.core.timeline import ChannelNotStarted, LoopingTimeline, utcnow
 
 router = APIRouter()
 
-_timeline: LoopingTimeline | None = None
+_timeline = None  # LoopingTimeline | ScheduledTimeline
 _manifest_cache: tuple[float, str] | None = None
 
 
 def reset_timeline() -> None:
-    """Drop the cached timeline (and manifest) so a new catalog is picked up."""
+    """Drop the cached timeline (and manifest) so a schedule/catalog edit shows."""
     global _timeline, _manifest_cache
     _timeline = None
     _manifest_cache = None
 
 
-def _load_assets():
-    if config.CATALOG_SOURCE == "db":
-        from app.db import session_scope
+def _build_timeline():
+    # JSON demo catalog (Phases 0-1): always a simple loop.
+    if config.CATALOG_SOURCE != "db":
+        return LoopingTimeline(load_catalog(config.CATALOG_PATH), epoch=config.CHANNEL_EPOCH)
 
-        with session_scope() as session:
-            return load_catalog_from_db(session)
-    return load_catalog(config.CATALOG_PATH)
+    from app.db import session_scope
+
+    with session_scope() as session:
+        assets = load_catalog_from_db(session)  # raises CatalogNotFound if empty
+        schedule = load_schedule_from_db(session, {a.id: a for a in assets})
+
+    if schedule is not None:
+        return ScheduledTimeline(schedule, epoch=config.CHANNEL_EPOCH)
+    # No schedule defined yet — loop the whole catalog.
+    return LoopingTimeline(assets, epoch=config.CHANNEL_EPOCH)
 
 
-def get_timeline() -> LoopingTimeline:
+def get_timeline():
     global _timeline
     if _timeline is None:
         try:
-            assets = _load_assets()
+            _timeline = _build_timeline()
         except CatalogNotFound as e:
             raise HTTPException(status_code=503, detail=str(e))
-        _timeline = LoopingTimeline(assets, epoch=config.CHANNEL_EPOCH)
     return _timeline
 
 

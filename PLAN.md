@@ -102,11 +102,18 @@ Each phase ends with something that visibly works.
   with no broker or on a Celery worker when `SHOWRUNNER_BROKER` is set.
   36 tests including a real-FFmpeg check that three different source files
   become interchangeable segment sets (identical codec/resolution/fps).
-- [ ] **Phase 3 — Real scheduler** *(~1–2 weekends)*
-  Schedule CRUD (Postgres), timeline resolver over scheduled entries + filler
-  policy, mid-air edit semantics (immutable served window; edits apply from
-  next join). **Done when:** resolver test suite passes over scheduled +
-  filler + gap cases.
+- [x] **Phase 3 — Real scheduler** *(~1–2 weekends)* — **done**
+  `ScheduledTimeline` resolves programmes at target offsets with a looping
+  filler tiling every gap, flattened into one cycle and resolved against the
+  wall clock (same drift-free/stateless engine, same `Window` contract as the
+  looping timeline). Schedule CRUD (`GET/PUT/DELETE /schedule`) with a shared
+  validator (rejects overlaps, out-of-period entries, missing filler); edits
+  rebuild the timeline immediately and only affect future segments. 53 tests
+  including a brute-force oracle that verifies every discontinuity flag and
+  the discontinuity-sequence segment-by-segment across cycles.
+  **Timing note:** filler is laid as whole segments, so a programme starts
+  within one segment (~4s) of its target — segment-accurate, not
+  frame-accurate, which is what keeps the cycle drift-free.
 - [ ] **Phase 4 — 24-hour soak** *(~2 weekends, the hard one)*
   Discontinuity correctness across every join, PDT alignment, drift
   measurement. **Done when:** channel plays 24h unattended, zero stalls,

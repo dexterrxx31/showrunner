@@ -46,6 +46,22 @@ class SegmentRow(Base):
     asset: Mapped["AssetRow"] = relationship(back_populates="segments")
 
 
+class ChannelSettingsRow(Base):
+    __tablename__ = "channel_settings"
+
+    id: Mapped[str] = mapped_column(String, primary_key=True, default="demo")
+    filler_asset_id: Mapped[str | None] = mapped_column(String, nullable=True)
+    period_seconds: Mapped[float] = mapped_column(Float, default=3600.0)
+
+
+class ScheduleEntryRow(Base):
+    __tablename__ = "schedule_entries"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    asset_id: Mapped[str] = mapped_column(String, nullable=False)
+    start_offset: Mapped[float] = mapped_column(Float, nullable=False)
+
+
 class IngestJobRow(Base):
     __tablename__ = "ingest_jobs"
 

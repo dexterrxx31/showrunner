@@ -51,6 +51,7 @@ docker compose up --build
 | `GET /channel/demo/now` | On-air / up-next JSON |
 | `POST /ingest` | Upload a video (multipart: `file`, `title`) → normalize + segment |
 | `GET /ingest/{job_id}` | Ingest job status |
+| `GET/PUT/DELETE /schedule` | Read / replace / clear the programme schedule |
 | `GET /segments/{asset}/{n}.ts` | Segment delivery (nginx/CDN in production) |
 | `GET /demo/` | hls.js demo player |
 
@@ -71,6 +72,28 @@ Ingest runs in-process by default (no broker needed). Set `SHOWRUNNER_BROKER`
 to route it to a Celery worker, and `SHOWRUNNER_STORAGE=s3` to store segments
 in MinIO/S3 — see `docker compose --profile full up`.
 
+## Programming a schedule
+
+Without a schedule the channel simply loops the whole catalog. Define a
+programme schedule — assets at target offsets within a repeating cycle, with a
+filler asset looping to cover every gap:
+
+```bash
+curl -X PUT http://localhost:8000/schedule -H 'content-type: application/json' -d '{
+  "filler_asset_id": "ident-xxxxxxxx",
+  "period_seconds": 3600,
+  "entries": [
+    {"asset_id": "movie-xxxxxxxx", "start_offset": 1200}
+  ]
+}'
+```
+
+The schedule is validated before it's stored (no overlaps, nothing past the
+period, filler required) and takes effect immediately. Timing is
+segment-accurate: a programme starts within one segment (~4s) of its target,
+which is what keeps the cycle drift-free. `DELETE /schedule` reverts to
+looping the catalog.
+
 ## Tests
 
 ```bash
@@ -83,8 +106,8 @@ where playout engines live or die.
 
 ## Status
 
-Phase 2 (ingest pipeline, 36 tests) complete — see the
-[roadmap](PLAN.md#5-phased-roadmap). Next: the real scheduler.
+Phase 3 (programme scheduler, 53 tests) complete — see the
+[roadmap](PLAN.md#5-phased-roadmap). Next: the 24-hour soak test.
 
 ## License
 
