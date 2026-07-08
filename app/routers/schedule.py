@@ -45,6 +45,21 @@ def _catalog(session) -> dict:
     return {a.id: a for a in assets}
 
 
+def _write_schedule(session, filler_asset_id, period_seconds, entries, ad_breaks) -> None:
+    """Persist a schedule atomically. `entries`: [(asset_id, offset)];
+    `ad_breaks`: [(offset, duration)]. Shared by PUT and the AI director."""
+    session.query(ScheduleEntryRow).delete()
+    session.query(AdBreakRow).delete()
+    settings = session.get(ChannelSettingsRow, "demo") or ChannelSettingsRow(id="demo")
+    settings.filler_asset_id = filler_asset_id
+    settings.period_seconds = period_seconds
+    session.add(settings)
+    for asset_id, offset in entries:
+        session.add(ScheduleEntryRow(asset_id=asset_id, start_offset=offset))
+    for offset, duration in ad_breaks:
+        session.add(AdBreakRow(start_offset=offset, duration=duration))
+
+
 @router.get("/schedule")
 def get_schedule() -> dict:
     with session_scope() as s:
@@ -96,21 +111,47 @@ def put_schedule(body: ScheduleIn) -> dict:
         if errors:
             raise HTTPException(status_code=422, detail=errors)
 
-        s.query(ScheduleEntryRow).delete()
-        s.query(AdBreakRow).delete()
-        settings = s.get(ChannelSettingsRow, "demo")
-        if settings is None:
-            settings = ChannelSettingsRow(id="demo")
-            s.add(settings)
-        settings.filler_asset_id = body.filler_asset_id
-        settings.period_seconds = body.period_seconds
-        for e in body.entries:
-            s.add(ScheduleEntryRow(asset_id=e.asset_id, start_offset=e.start_offset))
-        for a in body.ad_breaks:
-            s.add(AdBreakRow(start_offset=a.start_offset, duration=a.duration))
+        _write_schedule(
+            s,
+            body.filler_asset_id,
+            body.period_seconds,
+            [(e.asset_id, e.start_offset) for e in body.entries],
+            [(a.start_offset, a.duration) for a in body.ad_breaks],
+        )
 
     channel.reset_timeline()
     return {"status": "ok", "entries": len(body.entries), "ad_breaks": len(body.ad_breaks)}
+
+
+class GenerateIn(BaseModel):
+    brief: str
+    period_seconds: float = Field(default=3600, gt=0)
+
+
+@router.post("/schedule/generate")
+def generate_schedule(body: GenerateIn) -> dict:
+    from app.ai import director
+
+    try:
+        client = director.make_client()
+    except director.DirectorUnavailable as e:
+        raise HTTPException(status_code=503, detail=str(e))
+
+    with session_scope() as s:
+        try:
+            result = director.build_schedule(body.brief, body.period_seconds, s, client)
+        except director.DirectorError as e:
+            raise HTTPException(status_code=422, detail=str(e))
+        _write_schedule(
+            s,
+            result["filler_asset_id"],
+            result["period_seconds"],
+            [(e["asset_id"], e["start_offset"]) for e in result["entries"]],
+            [(a["start_offset"], a["duration"]) for a in result["ad_breaks"]],
+        )
+
+    channel.reset_timeline()
+    return {"status": "ok", **result}
 
 
 @router.delete("/schedule")

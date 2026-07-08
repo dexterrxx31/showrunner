@@ -22,6 +22,11 @@ class AssetRow(Base):
     id: Mapped[str] = mapped_column(String, primary_key=True)
     title: Mapped[str] = mapped_column(String, nullable=False)
     position: Mapped[int] = mapped_column(Integer, default=0)
+    # Optional programming metadata — lets the AI director ground briefs like
+    # "90s action night, family-friendly until 21:00".
+    genre: Mapped[str | None] = mapped_column(String, nullable=True)
+    rating: Mapped[str | None] = mapped_column(String, nullable=True)
+    year: Mapped[int | None] = mapped_column(Integer, nullable=True)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now()
     )

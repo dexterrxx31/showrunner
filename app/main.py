@@ -8,6 +8,7 @@ from fastapi.staticfiles import StaticFiles
 
 from app import config
 from app.db import init_db
+from app.routers.assets import router as assets_router
 from app.routers.channel import router as channel_router
 from app.routers.epg import router as epg_router
 from app.routers.ingest import router as ingest_router
@@ -33,6 +34,7 @@ app.include_router(channel_router)
 app.include_router(ingest_router)
 app.include_router(schedule_router)
 app.include_router(epg_router)
+app.include_router(assets_router)
 
 # Phase 0: segments served by the app for convenience.
 # Production: nginx/CDN serves these; app never touches segment bytes.

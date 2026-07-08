@@ -132,10 +132,16 @@ Each phase ends with something that visibly works.
   (`ad_breaks` on `PUT /schedule`), recurring each cycle — the hook for
   SCTE-35/SSAI. Upgraded demo UI: live on-air bar with progress, up-next, and
   a rolling programme guide. 68 tests. *(README demo GIF still to capture.)*
-- [ ] **Phase 6 — AI programming director** *(~1–2 weekends)*
-  Claude tool-use agent: brief → schedule (see §7). EPG synopses; smart
-  filler selection. **Done when:** a one-sentence brief produces a valid,
-  conflict-free 6-hour schedule.
+- [x] **Phase 6 — AI programming director** *(~1–2 weekends)* — **done**
+  `POST /schedule/generate` runs a Claude (`claude-opus-4-8`, adaptive
+  thinking) tool-use loop: `list_assets` → `submit_schedule`, with the shared
+  `validate_schedule` as the safety rail — the LLM proposes, deterministic
+  validation disposes, and Claude iterates on any violations it's handed back.
+  Accepted schedules persist through the same path as `PUT /schedule`. Asset
+  metadata (`genre`/`rating`/`year`, set via `PATCH /assets/{id}`) lets briefs
+  like "family-friendly until 21:00" be grounded. The client is injected, so
+  the whole loop — including self-correction — is covered in CI by a scripted
+  fake with no API key (live use needs `ANTHROPIC_API_KEY`). 77 tests.
 - [ ] **Phase 7 — Stretch**
   Go rewrite of the manifest origin + published benchmark; or true-encode
   mode (continuous FFmpeg with burned-in branding); or multi-channel.

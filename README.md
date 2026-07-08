@@ -52,6 +52,8 @@ docker compose up --build
 | `POST /ingest` | Upload a video (multipart: `file`, `title`) → normalize + segment |
 | `GET /ingest/{job_id}` | Ingest job status |
 | `GET/PUT/DELETE /schedule` | Read / replace / clear the programme schedule |
+| `POST /schedule/generate` | AI director: brief → validated schedule |
+| `GET /assets`, `PATCH /assets/{id}` | List assets / set genre, rating, year |
 | `GET /epg.xml` | Electronic programme guide (XMLTV) |
 | `GET /epg.json` | Programme guide as JSON (used by the demo UI) |
 | `GET /segments/{asset}/{n}.ts` | Segment delivery (nginx/CDN in production) |
@@ -116,6 +118,27 @@ The test suite covers the timeline resolver's edge cases — asset joins, cycle
 wrap, discontinuity sequencing, drift over 1000 cycles — because that math is
 where playout engines live or die.
 
+## AI programming director
+
+Instead of hand-writing a schedule, describe what you want and let Claude
+build it. Set `ANTHROPIC_API_KEY`, tag assets with metadata, then:
+
+```bash
+curl -X PATCH http://localhost:8000/assets/movie-xxxx \
+  -H 'content-type: application/json' \
+  -d '{"genre": "action", "rating": "PG-13", "year": 1994}'
+
+curl -X POST http://localhost:8000/schedule/generate \
+  -H 'content-type: application/json' \
+  -d '{"brief": "A 90s action night, family-friendly until 21:00, idents between films", "period_seconds": 10800}'
+```
+
+Claude inspects the catalog via tool calls and submits a schedule; the server
+validates it with the same rules as `PUT /schedule` and hands back any
+violations for Claude to fix. The engine only ever airs a schedule that passed
+validation — the model proposes, deterministic validation disposes. The
+accepted schedule is persisted and goes live immediately.
+
 ## Soak testing
 
 The channel is a pure function of the wall clock, so 24 hours of playout can be
@@ -135,8 +158,9 @@ segment is fetchable, and exits non-zero on any violation.
 
 ## Status
 
-Phase 5 (EPG + ad markers + on-air UI, 68 tests) complete — see the
-[roadmap](PLAN.md#5-phased-roadmap). Next: the AI programming director.
+Phase 6 (AI programming director, 77 tests) complete — see the
+[roadmap](PLAN.md#5-phased-roadmap). Next: the Go manifest-origin rewrite +
+benchmark.
 
 ## License
 
