@@ -22,7 +22,9 @@ the same manifest-stitching architecture behind most FAST channels
 `(epoch, catalog, schedule, wall clock)`, replicas agree byte-for-byte,
 restarts can't drift the channel, and horizontal scaling is free.
 
-See [PLAN.md](PLAN.md) for the full architecture, roadmap, and design notes.
+**Documentation:** [Architecture](docs/architecture.md) ·
+[API reference](docs/api.md) · [Operations](docs/operations.md) ·
+[Roadmap (PLAN.md)](PLAN.md)
 
 ## Quickstart
 
