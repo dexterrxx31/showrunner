@@ -152,8 +152,9 @@ Each phase ends with something that visibly works.
   p50 latency 7.6ms → 0.5ms. CI runs both the Python suite and `go test`.
   81 Python tests + the Go golden test.
 
-Remaining stretch ideas (not started): true-encode mode (continuous FFmpeg
-with burned-in branding), multi-channel, and the README demo GIF.
+README demo GIF captured from the live stream (`docs/demo.gif`). Remaining
+stretch ideas (not started): true-encode mode (continuous FFmpeg with
+burned-in branding), multi-channel.
 
 ## 6. Hard problems & mitigations
 

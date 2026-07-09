@@ -7,6 +7,11 @@ director.
 > *"Program Saturday evening as a 90s action night, family-friendly until
 > 21:00"* → a valid, gapless broadcast schedule.
 
+![The demo channel on air](docs/demo.gif)
+
+*The live channel cycling through synthetic test-pattern assets — a continuous
+HLS stream assembled from pre-cut segments with a discontinuity at each join.*
+
 ## How it works
 
 No video is processed at playout time. Assets are normalized to one uniform
