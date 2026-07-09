@@ -2,102 +2,259 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<title>showrunner — demo channel</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>showrunner</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
-  :root { color-scheme: dark; }
-  body { font-family: -apple-system, system-ui, sans-serif; background: #0e0f13; color: #e8e8ea;
-         margin: 0; padding: 2rem; display: flex; flex-direction: column; align-items: center; }
-  h2 { font-weight: 500; margin: 0 0 1rem; }
-  .stage { width: min(90vw, 960px); }
-  video { width: 100%; background: #000; border-radius: 10px; display: block; }
-  .nowbar { display: flex; align-items: center; gap: 1rem; margin-top: 0.75rem;
-            background: #16181f; border-radius: 10px; padding: 0.85rem 1rem; }
-  .live { background: #d64545; color: #fff; font-size: 0.7rem; font-weight: 500;
-          padding: 2px 7px; border-radius: 4px; letter-spacing: 0.05em; }
-  .nowtitle { font-weight: 500; }
-  .nowsub { color: #9a9aa2; font-size: 0.9rem; }
-  progress { width: 100%; height: 5px; margin-top: 0.5rem; }
-  .next { margin-left: auto; text-align: right; color: #9a9aa2; font-size: 0.9rem; }
-  .next b { color: #e8e8ea; font-weight: 500; }
-  .guide { width: min(90vw, 960px); margin-top: 1.25rem; }
-  .guide h3 { font-weight: 500; font-size: 0.95rem; color: #9a9aa2; margin: 0 0 0.5rem; }
-  .row { display: flex; gap: 0.75rem; padding: 0.55rem 0.7rem; border-radius: 8px;
-         align-items: baseline; }
-  .row:nth-child(even) { background: #14161c; }
-  .row.onair { background: #1d2230; }
-  .time { color: #7d7d86; font-variant-numeric: tabular-nums; width: 4.5rem; flex: none; }
-  .prog { font-weight: 500; }
-  .tag { font-size: 0.7rem; color: #7d7d86; border: 1px solid #33343c; border-radius: 4px;
-         padding: 0 5px; margin-left: 0.4rem; }
+  :root {
+    --bg: #0a0b0f;
+    --card: rgba(255,255,255,0.04);
+    --card-hover: rgba(255,255,255,0.07);
+    --border: rgba(255,255,255,0.08);
+    --border-strong: rgba(255,255,255,0.16);
+    --text: #eef0f4;
+    --text-dim: #9aa0ad;
+    --text-faint: #6b7280;
+    --accent: #6d8bff;
+    --accent-2: #46e0c0;
+    --live: #ff4757;
+    --radius: 16px;
+    color-scheme: dark;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Inter', -apple-system, system-ui, sans-serif;
+    background:
+      radial-gradient(1200px 600px at 15% -10%, rgba(109,139,255,0.12), transparent 60%),
+      radial-gradient(1000px 500px at 100% 0%, rgba(70,224,192,0.08), transparent 55%),
+      var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    -webkit-font-smoothing: antialiased;
+    letter-spacing: -0.01em;
+  }
+  .wrap { max-width: 1180px; margin: 0 auto; padding: 22px 22px 60px; }
+
+  header { display: flex; align-items: center; gap: 16px; padding: 6px 2px 22px; }
+  .brand { display: flex; align-items: center; gap: 11px; }
+  .logo {
+    width: 34px; height: 34px; border-radius: 9px;
+    background: linear-gradient(135deg, var(--accent), var(--accent-2));
+    display: grid; place-items: center; font-size: 18px; flex: none;
+  }
+  .brand h1 { font-size: 19px; font-weight: 700; letter-spacing: -0.02em; }
+  .brand span { display: block; font-size: 12px; color: var(--text-faint); font-weight: 500; margin-top: -1px; }
+  .channels { display: flex; gap: 8px; margin-left: auto; flex-wrap: wrap; }
+  .chan {
+    border: 1px solid var(--border); background: var(--card);
+    color: var(--text-dim); font: inherit; font-size: 13px; font-weight: 600;
+    padding: 8px 15px; border-radius: 999px; cursor: pointer;
+    transition: all .18s ease; letter-spacing: -0.01em;
+  }
+  .chan:hover { background: var(--card-hover); color: var(--text); border-color: var(--border-strong); }
+  .chan.active {
+    background: linear-gradient(135deg, var(--accent), var(--accent-2));
+    color: #0a0b0f; border-color: transparent;
+  }
+
+  .grid { display: grid; grid-template-columns: 1.9fr 1fr; gap: 20px; align-items: start; }
+  @media (max-width: 860px) { .grid { grid-template-columns: 1fr; } }
+
+  .card { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); backdrop-filter: blur(12px); }
+
+  .stage { position: relative; border-radius: var(--radius); overflow: hidden; background: #000; border: 1px solid var(--border); }
+  video { width: 100%; display: block; aspect-ratio: 16/9; background: #000; }
+  .lower-third {
+    position: absolute; left: 0; right: 0; bottom: 0; padding: 40px 18px 16px;
+    background: linear-gradient(transparent, rgba(0,0,0,0.75));
+    display: flex; align-items: flex-end; gap: 12px; pointer-events: none;
+  }
+  .live-badge {
+    display: inline-flex; align-items: center; gap: 6px;
+    background: var(--live); color: #fff; font-size: 11px; font-weight: 700;
+    letter-spacing: 0.06em; padding: 4px 9px; border-radius: 6px; flex: none;
+  }
+  .live-dot { width: 7px; height: 7px; border-radius: 50%; background: #fff; animation: pulse 1.8s infinite; }
+  @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.35; } }
+  @media (prefers-reduced-motion: reduce) { .live-dot { animation: none; } }
+  .lt-title { font-size: 17px; font-weight: 600; text-shadow: 0 1px 8px rgba(0,0,0,0.6); }
+  .lt-chan { font-size: 12px; color: rgba(255,255,255,0.7); font-weight: 500; }
+
+  .nowcard { margin-top: 16px; padding: 18px; }
+  .nc-top { display: flex; align-items: baseline; justify-content: space-between; gap: 16px; }
+  .nc-label { font-size: 11px; font-weight: 700; letter-spacing: 0.08em; color: var(--accent-2); }
+  .nc-title { font-size: 20px; font-weight: 600; margin-top: 4px; }
+  .nc-next { text-align: right; font-size: 13px; color: var(--text-dim); flex: none; }
+  .nc-next b { color: var(--text); font-weight: 600; display: block; margin-top: 2px; max-width: 180px; }
+  .bar { height: 6px; border-radius: 999px; background: rgba(255,255,255,0.08); margin-top: 16px; overflow: hidden; }
+  .bar > i { display: block; height: 100%; border-radius: 999px; background: linear-gradient(90deg, var(--accent), var(--accent-2)); width: 0; transition: width .9s linear; }
+  .nc-meta { display: flex; justify-content: space-between; margin-top: 8px; font-size: 12px; color: var(--text-faint); font-variant-numeric: tabular-nums; }
+
+  .guide { padding: 6px; }
+  .guide h2 { font-size: 13px; font-weight: 700; letter-spacing: 0.04em; color: var(--text-dim); padding: 14px 14px 10px; text-transform: uppercase; }
+  .row { display: flex; gap: 13px; padding: 12px 14px; border-radius: 12px; align-items: flex-start; transition: background .15s ease; }
+  .row + .row { margin-top: 2px; }
+  .row:hover { background: var(--card-hover); }
+  .row.on { background: linear-gradient(90deg, rgba(109,139,255,0.14), rgba(70,224,192,0.06)); box-shadow: inset 2px 0 0 var(--accent); }
+  .r-time { font-size: 13px; color: var(--text-faint); font-variant-numeric: tabular-nums; width: 46px; flex: none; padding-top: 1px; }
+  .row.on .r-time { color: var(--accent); font-weight: 600; }
+  .r-body { flex: 1; min-width: 0; }
+  .r-title { font-size: 14px; font-weight: 500; }
+  .r-sub { font-size: 12px; color: var(--text-faint); margin-top: 2px; }
+  .tag { font-size: 10px; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; color: var(--text-dim); border: 1px solid var(--border); border-radius: 5px; padding: 1px 6px; margin-left: 7px; }
+  .nowpill { font-size: 10px; font-weight: 700; color: var(--accent-2); letter-spacing: 0.05em; }
+
+  .empty { padding: 40px 20px; text-align: center; color: var(--text-dim); font-size: 14px; line-height: 1.6; }
+  footer { margin-top: 34px; text-align: center; color: var(--text-faint); font-size: 12px; }
+  footer a { color: var(--text-dim); text-decoration: none; }
+  footer a:hover { color: var(--text); }
 </style>
 </head>
 <body>
-<h2>showrunner — demo channel</h2>
-<div class="stage">
-  <video id="video" controls autoplay muted playsinline></video>
-  <div class="nowbar">
-    <span class="live">● LIVE</span>
-    <div style="flex:1; min-width:0;">
-      <div class="nowtitle" id="nowtitle">loading…</div>
-      <progress id="prog" max="100" value="0"></progress>
+<div class="wrap">
+  <header>
+    <div class="brand">
+      <div class="logo">📺</div>
+      <div><h1>showrunner</h1><span>AI-programmed linear TV</span></div>
     </div>
-    <div class="next">up next<br><b id="nexttitle">—</b></div>
-  </div>
-</div>
+    <nav class="channels" id="channels" aria-label="Channels"></nav>
+  </header>
 
-<div class="guide">
-  <h3>Up next on the channel</h3>
-  <div id="rows"></div>
+  <div class="grid">
+    <div>
+      <div class="stage">
+        <video id="video" playsinline autoplay muted></video>
+        <div class="lower-third">
+          <span class="live-badge"><span class="live-dot"></span>LIVE</span>
+          <div>
+            <div class="lt-chan" id="ltChan">—</div>
+            <div class="lt-title" id="ltTitle">Loading channel…</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card nowcard">
+        <div class="nc-top">
+          <div>
+            <div class="nc-label">ON AIR</div>
+            <div class="nc-title" id="nowTitle">—</div>
+          </div>
+          <div class="nc-next">up next<b id="nextTitle">—</b></div>
+        </div>
+        <div class="bar"><i id="progress"></i></div>
+        <div class="nc-meta"><span id="elapsed">0:00</span><span id="remaining">—</span></div>
+      </div>
+    </div>
+
+    <div class="card guide">
+      <h2>Programme guide</h2>
+      <div id="rows"></div>
+    </div>
+  </div>
+
+  <footer>
+    Stateless HLS playout · <a href="https://github.com/dexterrxx31/showrunner" target="_blank" rel="noopener">github.com/dexterrxx31/showrunner</a>
+  </footer>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/hls.js@1"></script>
 <script>
-const video = document.getElementById("video");
-const src = "/channel/demo/playlist.m3u8";
-if (Hls.isSupported()) {
-  const hls = new Hls({ liveSyncDurationCount: 3 });
-  hls.loadSource(src); hls.attachMedia(video);
-} else if (video.canPlayType("application/vnd.apple.mpegurl")) {
-  video.src = src;
+const $ = (id) => document.getElementById(id);
+let hls = null, current = "demo", nowTimer = null, guideTimer = null;
+
+function fmtClock(iso) {
+  return new Date(iso).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+}
+function fmtDur(s) {
+  s = Math.max(0, Math.round(s));
+  const m = Math.floor(s / 60), sec = s % 60;
+  if (m >= 60) { const h = Math.floor(m / 60); return `${h}:${String(m % 60).padStart(2, "0")}:00`; }
+  return `${m}:${String(sec).padStart(2, "0")}`;
 }
 
-function fmt(iso) {
-  const d = new Date(iso);
-  return d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+function attach(channelId) {
+  const src = `/channel/${channelId}/playlist.m3u8`;
+  if (hls) { hls.destroy(); hls = null; }
+  const v = $("video");
+  if (window.Hls && Hls.isSupported()) {
+    hls = new Hls({ liveSyncDurationCount: 3, enableWorker: true });
+    hls.loadSource(src); hls.attachMedia(v);
+    hls.on(Hls.Events.ERROR, (_, d) => { if (d.fatal) setTimeout(() => attach(channelId), 2500); });
+  } else if (v.canPlayType("application/vnd.apple.mpegurl")) {
+    v.src = src;
+  }
+  v.play?.().catch(() => {});
 }
 
-async function refreshNow() {
+async function refreshNow(id) {
   try {
-    const d = await (await fetch("/channel/demo/now")).json();
-    const pct = Math.round(100 * d.on_air.position_s / d.on_air.duration_s);
-    document.getElementById("nowtitle").textContent = d.on_air.title;
-    document.getElementById("prog").value = isFinite(pct) ? pct : 0;
-    document.getElementById("nexttitle").textContent = d.up_next.title;
-  } catch (e) {}
+    const r = await fetch(`/channel/${id}/now`);
+    if (!r.ok) throw 0;
+    const d = await r.json();
+    const pct = d.on_air.duration_s ? Math.min(100, 100 * d.on_air.position_s / d.on_air.duration_s) : 0;
+    $("nowTitle").textContent = d.on_air.title;
+    $("ltTitle").textContent = d.on_air.title;
+    $("nextTitle").textContent = d.up_next.title;
+    $("progress").style.width = pct + "%";
+    $("elapsed").textContent = fmtDur(d.on_air.position_s);
+    $("remaining").textContent = "-" + fmtDur(d.on_air.duration_s - d.on_air.position_s);
+  } catch { /* transient */ }
 }
 
-async function refreshGuide() {
+async function refreshGuide(id) {
+  const rows = $("rows");
   try {
-    const progs = await (await fetch("/epg.json?hours=3")).json();
+    const progs = await (await fetch(`/channel/${id}/epg.json?hours=4`)).json();
     const now = Date.now();
-    const rows = document.getElementById("rows");
+    if (!progs.length) throw 0;
     rows.innerHTML = "";
-    for (const p of progs.slice(0, 12)) {
-      const onair = new Date(p.start) <= now && now < new Date(p.stop);
-      const row = document.createElement("div");
-      row.className = "row" + (onair ? " onair" : "");
-      row.innerHTML =
-        `<span class="time">${fmt(p.start)}</span>` +
-        `<span class="prog">${p.title}</span>` +
-        (p.filler ? `<span class="tag">filler</span>` : "");
-      rows.appendChild(row);
+    for (const p of progs.slice(0, 14)) {
+      const on = new Date(p.start) <= now && now < new Date(p.stop);
+      const el = document.createElement("div");
+      el.className = "row" + (on ? " on" : "");
+      el.innerHTML =
+        `<div class="r-time">${fmtClock(p.start)}</div>` +
+        `<div class="r-body">` +
+          `<div class="r-title">${p.title}${p.filler ? '<span class="tag">filler</span>' : ''}</div>` +
+          `<div class="r-sub">${on ? '<span class="nowpill">● ON NOW</span>' : 'until ' + fmtClock(p.stop)}</div>` +
+        `</div>`;
+      rows.appendChild(el);
     }
-  } catch (e) {}
+  } catch {
+    rows.innerHTML = `<div class="empty">No programme guide yet.<br>Program a schedule or run the AI director.</div>`;
+  }
 }
 
-refreshNow(); refreshGuide();
-setInterval(refreshNow, 2000);
-setInterval(refreshGuide, 15000);
+function select(id, label) {
+  current = id;
+  document.querySelectorAll(".chan").forEach(b => b.classList.toggle("active", b.dataset.id === id));
+  if (label) $("ltChan").textContent = label;
+  attach(id);
+  refreshNow(id); refreshGuide(id);
+  clearInterval(nowTimer); clearInterval(guideTimer);
+  nowTimer = setInterval(() => refreshNow(current), 2000);
+  guideTimer = setInterval(() => refreshGuide(current), 15000);
+}
+
+async function boot() {
+  let channels = [];
+  try { channels = await (await fetch("/channels")).json(); } catch {}
+  if (!channels.length) channels = [{ id: "demo", name: "Demo" }];
+  const nav = $("channels");
+  nav.innerHTML = "";
+  for (const c of channels) {
+    const b = document.createElement("button");
+    b.className = "chan"; b.dataset.id = c.id;
+    b.textContent = c.name || c.id;
+    b.onclick = () => select(c.id, b.textContent);
+    nav.appendChild(b);
+  }
+  const first = channels.find(c => c.id === "demo") || channels[0];
+  select(first.id, first.name || first.id);
+}
+boot();
 </script>
 </body>
 </html>
