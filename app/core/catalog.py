@@ -62,8 +62,8 @@ def load_catalog_from_db(session) -> list[Asset]:
     return assets
 
 
-def load_schedule_from_db(session, catalog: dict[str, Asset]):
-    """Build a ScheduleDef from DB rows, or return None if none is defined.
+def load_schedule_from_db(session, catalog: dict[str, Asset], channel_id: str = "demo"):
+    """Build a channel's ScheduleDef from DB rows, or None if none is defined.
 
     Returns None (channel falls back to looping the catalog) when there are no
     entries, no filler is set, or a referenced asset is missing — the schedule
@@ -73,14 +73,19 @@ def load_schedule_from_db(session, catalog: dict[str, Asset]):
     from app.core.schedule import ScheduleDef
     from app.models import AdBreakRow, ChannelSettingsRow, ScheduleEntryRow
 
-    settings = session.get(ChannelSettingsRow, "demo")
+    settings = session.get(ChannelSettingsRow, channel_id)
     if settings is None or not settings.filler_asset_id:
         return None
     filler = catalog.get(settings.filler_asset_id)
     if filler is None:
         return None
 
-    rows = session.query(ScheduleEntryRow).order_by(ScheduleEntryRow.start_offset).all()
+    rows = (
+        session.query(ScheduleEntryRow)
+        .filter(ScheduleEntryRow.channel_id == channel_id)
+        .order_by(ScheduleEntryRow.start_offset)
+        .all()
+    )
     entries = []
     for r in rows:
         asset = catalog.get(r.asset_id)
@@ -92,6 +97,23 @@ def load_schedule_from_db(session, catalog: dict[str, Asset]):
 
     ad_breaks = [
         (r.start_offset, r.duration)
-        for r in session.query(AdBreakRow).order_by(AdBreakRow.start_offset).all()
+        for r in session.query(AdBreakRow)
+        .filter(AdBreakRow.channel_id == channel_id)
+        .order_by(AdBreakRow.start_offset)
+        .all()
     ]
     return ScheduleDef.build(entries, filler, settings.period_seconds, ad_breaks)
+
+
+def channel_epoch(session, channel_id: str = "demo"):
+    """The channel's epoch — its own if set, else the global default."""
+    from datetime import datetime, timezone
+
+    from app import config
+    from app.models import ChannelSettingsRow
+
+    settings = session.get(ChannelSettingsRow, channel_id)
+    if settings is not None and settings.epoch:
+        dt = datetime.fromisoformat(settings.epoch)
+        return dt if dt.tzinfo else dt.replace(tzinfo=timezone.utc)
+    return config.CHANNEL_EPOCH

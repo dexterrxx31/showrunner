@@ -1,8 +1,9 @@
 """Channel endpoints: the live manifest and now-playing info.
 
 The manifest is a pure function of wall clock + catalog, so a 1-second
-in-process cache collapses any number of concurrent viewers into at most
-one window computation per second.
+in-process cache (per channel) collapses any number of concurrent viewers into
+at most one window computation per second. Routes are parametric over
+`channel_id`, so `demo` is simply one channel among many.
 """
 
 from __future__ import annotations
@@ -14,6 +15,7 @@ from fastapi import APIRouter, HTTPException, Response
 from app import config
 from app.core.catalog import (
     CatalogNotFound,
+    channel_epoch,
     load_catalog,
     load_catalog_from_db,
     load_schedule_from_db,
@@ -24,19 +26,23 @@ from app.core.timeline import ChannelNotStarted, LoopingTimeline, utcnow
 
 router = APIRouter()
 
-_timeline = None  # LoopingTimeline | ScheduledTimeline
-_manifest_cache: tuple[float, str] | None = None
+# Per-channel caches. A schedule/catalog edit resets the affected channel.
+_timelines: dict[str, object] = {}
+_manifest_cache: dict[str, tuple[float, str]] = {}
 
 
-def reset_timeline() -> None:
-    """Drop the cached timeline (and manifest) so a schedule/catalog edit shows."""
-    global _timeline, _manifest_cache
-    _timeline = None
-    _manifest_cache = None
+def reset_timeline(channel_id: str | None = None) -> None:
+    """Drop cached timeline(s) so a schedule/catalog edit shows. None = all."""
+    if channel_id is None:
+        _timelines.clear()
+        _manifest_cache.clear()
+    else:
+        _timelines.pop(channel_id, None)
+        _manifest_cache.pop(channel_id, None)
 
 
-def _build_timeline():
-    # JSON demo catalog (Phases 0-1): always a simple loop.
+def _build_timeline(channel_id: str):
+    # JSON demo catalog (Phases 0-1): a single "demo" channel that loops.
     if config.CATALOG_SOURCE != "db":
         return LoopingTimeline(load_catalog(config.CATALOG_PATH), epoch=config.CHANNEL_EPOCH)
 
@@ -44,38 +50,38 @@ def _build_timeline():
 
     with session_scope() as session:
         assets = load_catalog_from_db(session)  # raises CatalogNotFound if empty
-        schedule = load_schedule_from_db(session, {a.id: a for a in assets})
+        schedule = load_schedule_from_db(session, {a.id: a for a in assets}, channel_id)
+        epoch = channel_epoch(session, channel_id)
 
     if schedule is not None:
-        return ScheduledTimeline(schedule, epoch=config.CHANNEL_EPOCH)
-    # No schedule defined yet — loop the whole catalog.
-    return LoopingTimeline(assets, epoch=config.CHANNEL_EPOCH)
+        return ScheduledTimeline(schedule, epoch=epoch)
+    # No schedule for this channel — loop the whole catalog.
+    return LoopingTimeline(assets, epoch=epoch)
 
 
-def get_timeline():
-    global _timeline
-    if _timeline is None:
+def get_timeline(channel_id: str = "demo"):
+    if channel_id not in _timelines:
         try:
-            _timeline = _build_timeline()
+            _timelines[channel_id] = _build_timeline(channel_id)
         except CatalogNotFound as e:
             raise HTTPException(status_code=503, detail=str(e))
-    return _timeline
+    return _timelines[channel_id]
 
 
-@router.get("/channel/demo/playlist.m3u8")
-def playlist() -> Response:
-    global _manifest_cache
+@router.get("/channel/{channel_id}/playlist.m3u8")
+def playlist(channel_id: str) -> Response:
     now_mono = time.monotonic()
-    if _manifest_cache and _manifest_cache[0] > now_mono:
-        body = _manifest_cache[1]
+    cached = _manifest_cache.get(channel_id)
+    if cached and cached[0] > now_mono:
+        body = cached[1]
     else:
-        timeline = get_timeline()
+        timeline = get_timeline(channel_id)
         try:
             window = timeline.window(utcnow(), size=config.WINDOW_SIZE)
         except ChannelNotStarted as e:
             raise HTTPException(status_code=404, detail=str(e))
         body = render_media_playlist(window)
-        _manifest_cache = (now_mono + config.MANIFEST_CACHE_TTL, body)
+        _manifest_cache[channel_id] = (now_mono + config.MANIFEST_CACHE_TTL, body)
     return Response(
         content=body,
         media_type="application/vnd.apple.mpegurl",
@@ -83,9 +89,9 @@ def playlist() -> Response:
     )
 
 
-@router.get("/channel/demo/now")
-def now_playing() -> dict:
-    timeline = get_timeline()
+@router.get("/channel/{channel_id}/now")
+def now_playing(channel_id: str) -> dict:
+    timeline = get_timeline(channel_id)
     try:
         info = timeline.now_playing(utcnow())
     except ChannelNotStarted as e:

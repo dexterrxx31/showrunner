@@ -52,9 +52,17 @@ class SegmentRow(Base):
 
 
 class ChannelSettingsRow(Base):
+    """A channel: its display name, epoch, filler, and cycle period.
+
+    One asset library, many channels — each programmes the shared catalog
+    independently. The id is the channel slug used in URLs (`demo` by default).
+    """
+
     __tablename__ = "channel_settings"
 
     id: Mapped[str] = mapped_column(String, primary_key=True, default="demo")
+    name: Mapped[str | None] = mapped_column(String, nullable=True)
+    epoch: Mapped[str | None] = mapped_column(String, nullable=True)  # ISO 8601
     filler_asset_id: Mapped[str | None] = mapped_column(String, nullable=True)
     period_seconds: Mapped[float] = mapped_column(Float, default=3600.0)
 
@@ -63,6 +71,7 @@ class ScheduleEntryRow(Base):
     __tablename__ = "schedule_entries"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    channel_id: Mapped[str] = mapped_column(String, default="demo", index=True)
     asset_id: Mapped[str] = mapped_column(String, nullable=False)
     start_offset: Mapped[float] = mapped_column(Float, nullable=False)
 
@@ -71,6 +80,7 @@ class AdBreakRow(Base):
     __tablename__ = "ad_breaks"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    channel_id: Mapped[str] = mapped_column(String, default="demo", index=True)
     start_offset: Mapped[float] = mapped_column(Float, nullable=False)
     duration: Mapped[float] = mapped_column(Float, nullable=False)
 

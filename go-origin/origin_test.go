@@ -2,6 +2,8 @@ package main
 
 import (
 	"encoding/json"
+	"net/http"
+	"net/http/httptest"
 	"os"
 	"testing"
 	"time"
@@ -48,6 +50,32 @@ func TestMatchesPythonGolden(t *testing.T) {
 		}
 	}
 	t.Logf("verified %d manifests against the Python golden", len(golden.Cases))
+}
+
+func TestRoutingServesKnownChannel404sUnknown(t *testing.T) {
+	snap, err := LoadSnapshot("testdata/snapshot.json")
+	if err != nil {
+		t.Fatalf("load snapshot: %v", err)
+	}
+	srv := &server{channels: map[string]*cachedManifest{
+		"demo": {snap: snap, size: 6},
+	}}
+	h := srv.handler()
+
+	rec := httptest.NewRecorder()
+	h.ServeHTTP(rec, httptest.NewRequest(http.MethodGet, "/channel/demo/playlist.m3u8", nil))
+	if rec.Code != http.StatusOK {
+		t.Fatalf("demo: want 200, got %d", rec.Code)
+	}
+	if ct := rec.Header().Get("Content-Type"); ct != "application/vnd.apple.mpegurl" {
+		t.Fatalf("content-type: %q", ct)
+	}
+
+	rec = httptest.NewRecorder()
+	h.ServeHTTP(rec, httptest.NewRequest(http.MethodGet, "/channel/ghost/playlist.m3u8", nil))
+	if rec.Code != http.StatusNotFound {
+		t.Fatalf("unknown channel: want 404, got %d", rec.Code)
+	}
 }
 
 func TestBeforeEpochIsNotStarted(t *testing.T) {

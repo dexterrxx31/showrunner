@@ -34,8 +34,7 @@ CATALOG = {
 
 
 def _reset_channel_state():
-    channel._timeline = None
-    channel._manifest_cache = None
+    channel.reset_timeline()
 
 
 @pytest.fixture
@@ -88,7 +87,7 @@ def test_cache_serves_stale_within_ttl(client, monkeypatch):
     # TTL high + wall clock jumped forward: the window WOULD change, but the
     # cache must serve the stale body — proving the cache is actually hit.
     monkeypatch.setattr(config, "MANIFEST_CACHE_TTL", 3600.0)
-    channel._manifest_cache = None
+    channel.reset_timeline()
     clock = {"now": EPOCH}
     monkeypatch.setattr(channel, "utcnow", lambda: clock["now"])
     b1 = client.get("/channel/demo/playlist.m3u8").text
@@ -100,7 +99,7 @@ def test_cache_serves_stale_within_ttl(client, monkeypatch):
 def test_cache_disabled_recomputes(client, monkeypatch):
     # TTL=0 disables the cache: the same clock jump must yield a fresh window.
     monkeypatch.setattr(config, "MANIFEST_CACHE_TTL", 0.0)
-    channel._manifest_cache = None
+    channel.reset_timeline()
     clock = {"now": EPOCH}
     monkeypatch.setattr(channel, "utcnow", lambda: clock["now"])
     b1 = client.get("/channel/demo/playlist.m3u8").text
