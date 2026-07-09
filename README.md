@@ -58,7 +58,9 @@ docker compose up --build
 | `GET /ingest/{job_id}` | Ingest job status |
 | `GET/PUT/DELETE /schedule` | Read / replace / clear the programme schedule |
 | `POST /schedule/generate` | AI director: brief → validated schedule |
+| `GET/POST /channels`, `DELETE /channels/{id}` | Manage channels; per-channel `/channels/{id}/schedule` too |
 | `GET /assets`, `PATCH /assets/{id}` | List assets / set genre, rating, year |
+| `POST /channel/{id}/encode/{start,stop}` | True-encode: continuous branded FFmpeg playout |
 | `GET /epg.xml` | Electronic programme guide (XMLTV) |
 | `GET /epg.json` | Programme guide as JSON (used by the demo UI) |
 | `GET /segments/{asset}/{n}.ts` | Segment delivery (nginx/CDN in production) |
@@ -143,6 +145,37 @@ validates it with the same rules as `PUT /schedule` and hands back any
 violations for Claude to fix. The engine only ever airs a schedule that passed
 validation — the model proposes, deterministic validation disposes. The
 accepted schedule is persisted and goes live immediately.
+
+## Multiple channels
+
+One asset library can drive many independent channels — each with its own name,
+epoch, schedule, and ad breaks:
+
+```bash
+curl -X POST http://localhost:8000/channels -d '{"id": "news", "name": "News 24"}'
+curl -X PUT http://localhost:8000/channels/news/schedule -d '{ ... }'
+# → http://localhost:8000/channel/news/playlist.m3u8
+```
+
+Every channel gets its own manifest, EPG, and (optionally) AI-generated
+schedule. The Go origin serves them all from a directory of snapshots
+(`python scripts/export_snapshot.py --all <dir>`).
+
+## True-encode mode (optional)
+
+Manifest-stitching is the default (stateless, restart-safe). For channels that
+need **burned-in graphics** — a channel bug, a lower-third — there's an
+alternative that runs a continuous FFmpeg process re-encoding the channel into
+one branded stream, the way a traditional playout chain works:
+
+```bash
+curl -X POST http://localhost:8000/channel/demo/encode/start
+# → serves /encoded/demo/playlist.m3u8 with the channel name burned in
+curl -X POST http://localhost:8000/channel/demo/encode/stop
+```
+
+It trades the stateless properties for frame-accurate on-screen graphics, and
+degrades to a plain lower-third bar if the local ffmpeg lacks `drawtext`.
 
 ## Performance: the Go manifest origin
 

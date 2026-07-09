@@ -152,9 +152,20 @@ Each phase ends with something that visibly works.
   p50 latency 7.6ms → 0.5ms. CI runs both the Python suite and `go test`.
   81 Python tests + the Go golden test.
 
-README demo GIF captured from the live stream (`docs/demo.gif`). Remaining
-stretch ideas (not started): true-encode mode (continuous FFmpeg with
-burned-in branding), multi-channel.
+README demo GIF captured from the live stream (`docs/demo.gif`).
+
+- [x] **Multi-channel** — one asset library, many independent channels (own
+  name/epoch/schedule/ad-breaks). Parametric `/channel/{id}/...` routes with
+  the single-channel routes kept as `demo` aliases; `GET/POST /channels`,
+  `DELETE /channels/{id}`; per-channel timeline/manifest caches; the Go origin
+  serves multiple channels from a snapshot directory.
+- [x] **True-encode mode** — an optional continuous-FFmpeg playout that
+  re-encodes a channel into one stream with burned-in branding (a translucent
+  lower-third + channel name), served under `/encoded/{id}/playlist.m3u8`.
+  `POST /channel/{id}/encode/{start,stop}`, `GET .../encode/status`; degrades
+  to bar-only branding when the local ffmpeg lacks `drawtext`.
+
+99 Python tests + Go golden/routing tests. No stretch ideas remaining.
 
 ## 6. Hard problems & mitigations
 

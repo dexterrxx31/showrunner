@@ -40,6 +40,10 @@ S3_ACCESS_KEY = os.environ.get("SHOWRUNNER_S3_ACCESS_KEY", "")
 S3_SECRET_KEY = os.environ.get("SHOWRUNNER_S3_SECRET_KEY", "")
 S3_REGION = os.environ.get("SHOWRUNNER_S3_REGION", "us-east-1")
 
+# --- true-encode playout (optional alternative to manifest stitching) -------
+ENCODE_DIR = os.environ.get("SHOWRUNNER_ENCODE_DIR", "data/encoded")
+ENCODE_FONT = os.environ.get("SHOWRUNNER_ENCODE_FONT")  # branding font; auto if unset
+
 # --- task queue ------------------------------------------------------------
 # When set, ingest runs on a Celery worker; otherwise it runs eagerly in-process
 # via FastAPI background tasks (fine for dev and tests, no broker required).
