@@ -9,12 +9,14 @@ under /encoded/{channel_id}/playlist.m3u8.
 from __future__ import annotations
 
 from pathlib import Path
+from typing import Annotated
 
 from fastapi import APIRouter, HTTPException
+from fastapi import Path as PathParam
 
 import app.routers.channel as channel
 from app import config
-from app.core.catalog import CatalogNotFound
+from app.core.catalog import CHANNEL_ID_PATTERN, CatalogNotFound
 from app.core.encode import (
     build_encode_cmd,
     encoder,
@@ -27,6 +29,8 @@ from app.db import session_scope
 from app.models import ChannelSettingsRow
 
 router = APIRouter()
+
+ChannelId = Annotated[str, PathParam(pattern=CHANNEL_ID_PATTERN)]
 
 
 def _local_segment_path(uri: str) -> Path:
@@ -48,7 +52,7 @@ def _playlist_url(channel_id: str) -> str:
 
 
 @router.post("/channel/{channel_id}/encode/start")
-def start_encode(channel_id: str) -> dict:
+def start_encode(channel_id: ChannelId) -> dict:
     try:
         timeline = channel._build_timeline(channel_id)
     except CatalogNotFound as e:
@@ -82,13 +86,13 @@ def start_encode(channel_id: str) -> dict:
 
 
 @router.post("/channel/{channel_id}/encode/stop")
-def stop_encode(channel_id: str) -> dict:
+def stop_encode(channel_id: ChannelId) -> dict:
     stopped = encoder.stop(channel_id)
     return {"status": "stopped" if stopped else "not_running"}
 
 
 @router.get("/channel/{channel_id}/encode/status")
-def encode_status(channel_id: str) -> dict:
+def encode_status(channel_id: ChannelId) -> dict:
     running = encoder.is_running(channel_id)
     return {
         "running": running,

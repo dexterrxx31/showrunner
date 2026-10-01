@@ -101,3 +101,15 @@ def test_start_produces_stream_then_stop(client, tmp_path):
 
     assert client.post("/channel/demo/encode/stop").json()["status"] == "stopped"
     assert client.get("/channel/demo/encode/status").json()["running"] is False
+
+
+@pytest.mark.parametrize("bad_id", ["..", ".", ".hidden", "UPPER", "a b", "x" * 65])
+def test_encode_rejects_unsafe_channel_ids(client, bad_id):
+    for method, suffix in (("post", "start"), ("post", "stop"), ("get", "status")):
+        r = getattr(client, method)(f"/channel/{bad_id}/encode/{suffix}")
+        assert r.status_code in (404, 422), (bad_id, suffix, r.status_code)
+
+
+def test_create_channel_rejects_unsafe_id(client):
+    r = client.post("/channels", json={"id": "../escape", "name": "x"})
+    assert r.status_code == 422
