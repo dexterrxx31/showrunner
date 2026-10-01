@@ -3,7 +3,7 @@
 Every asset is transcoded to ONE spec (resolution, fps, GOP, audio) with
 keyframes forced at the segment boundary, so segments from different assets
 are byte-for-byte interchangeable at playout time. Segment durations are
-read back with ffprobe — the exact values, never nominal — because that is
+read back with ffprobe (the exact values, never nominal) because that is
 what keeps the timeline resolver drift-free.
 """
 

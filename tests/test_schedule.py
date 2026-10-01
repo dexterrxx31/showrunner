@@ -49,7 +49,7 @@ def test_back_to_back_entries_get_discontinuity_within_entry_none():
 
 
 def test_single_segment_filler_loop_is_discontinuity_each_restart():
-    # A 4s filler tiling a 12s leading gap loops 3x — each restart breaks decode.
+    # A 4s filler tiling a 12s leading gap loops 3x; each restart breaks decode.
     # Sampled in the second cycle so the window isn't anchored at global 0
     # (which is never a discontinuity, by HLS convention).
     tl = make([(asset("movie", 2), 12.0)], asset("id", 1), period=20.0)

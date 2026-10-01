@@ -11,7 +11,7 @@ Times are UTC ISO 8601. Offsets and durations are in seconds.
 ## Channel (playback)
 
 ### `GET /channel/{channel_id}/playlist.m3u8`
-The live HLS media playlist — a sliding window over the channel's segments.
+The live HLS media playlist: a sliding window over the channel's segments.
 Cached 1 second. `channel_id` is `demo` unless you created others.
 
 - `200` → `application/vnd.apple.mpegurl`, `Cache-Control: max-age=1`
@@ -131,7 +131,7 @@ Replace the schedule atomically. Validated before persisting.
 Clears the schedule; the channel reverts to looping the catalog.
 
 ### `POST /channels/{channel_id}/schedule/generate`
-AI director — generate and apply a schedule from a brief. Requires
+AI director: generate and apply a schedule from a brief. Requires
 `ANTHROPIC_API_KEY`.
 ```json
 {"brief": "90s action night, family-friendly until 21:00", "period_seconds": 10800}

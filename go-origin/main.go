@@ -12,7 +12,7 @@ import (
 
 // cachedManifest serves one channel's live playlist with a 1-second TTL.
 // Because the manifest is a pure function of the wall clock, one render per
-// second serves every concurrent viewer — the same lever the Python origin uses.
+// second serves every concurrent viewer; the same lever the Python origin uses.
 type cachedManifest struct {
 	snap   *Snapshot
 	size   int

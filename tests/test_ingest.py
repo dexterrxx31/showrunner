@@ -114,7 +114,7 @@ def test_segments_are_interchangeable_across_assets(env):
                 workdir=config.WORK_DIR,
             )
 
-    # Probe one segment from each asset — all must share codec/res/fps.
+    # Probe one segment from each asset; all must share codec/res/fps.
     def video_spec(ts_path):
         out = subprocess.run(
             [

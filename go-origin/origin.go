@@ -2,8 +2,8 @@
 // origin that serves live media playlists from a precompiled cycle snapshot.
 //
 // The snapshot is produced by the Python control plane (app/core/snapshot.py).
-// This origin re-implements the hot path only — resolve the wall clock to a
-// window and render the .m3u8 — mirroring app/core/manifest.render_media_playlist
+// This origin re-implements the hot path only: resolve the wall clock to a
+// window and render the .m3u8, mirroring app/core/manifest.render_media_playlist
 // byte-for-byte. Correctness is pinned by go-origin/testdata/golden.json, which
 // is generated from the canonical Python renderer.
 package main

@@ -72,7 +72,7 @@ def test_snapshot_export_shape():
 
 
 def test_go_fixtures_are_up_to_date():
-    # The committed Go fixtures must equal a fresh regeneration — otherwise the
+    # The committed Go fixtures must equal a fresh regeneration; otherwise the
     # Go origin is being validated against a stale copy of the Python renderer.
     committed = {
         name: json.loads((ROOT / "go-origin" / "testdata" / name).read_text())
@@ -83,4 +83,4 @@ def test_go_fixtures_are_up_to_date():
     )
     for name, old in committed.items():
         fresh = json.loads((ROOT / "go-origin" / "testdata" / name).read_text())
-        assert fresh == old, f"{name} is stale — commit the regenerated fixtures"
+        assert fresh == old, f"{name} is stale; commit the regenerated fixtures"

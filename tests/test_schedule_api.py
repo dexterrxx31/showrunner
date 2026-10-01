@@ -1,6 +1,6 @@
 """Schedule CRUD over HTTP, and the channel airing a scheduled programme.
 
-No FFmpeg needed — catalog rows are inserted directly, then the schedule is
+No FFmpeg needed; catalog rows are inserted directly, then the schedule is
 driven through the API and the channel clock is pinned to assert what's on air.
 """
 

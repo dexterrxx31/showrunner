@@ -85,7 +85,7 @@ def test_missing_catalog_returns_503(tmp_path, monkeypatch):
 
 def test_cache_serves_stale_within_ttl(client, monkeypatch):
     # TTL high + wall clock jumped forward: the window WOULD change, but the
-    # cache must serve the stale body — proving the cache is actually hit.
+    # cache must serve the stale body, proving the cache is actually hit.
     monkeypatch.setattr(config, "MANIFEST_CACHE_TTL", 3600.0)
     channel.reset_timeline()
     clock = {"now": EPOCH}

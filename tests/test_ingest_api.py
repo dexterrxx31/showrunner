@@ -1,7 +1,7 @@
 """The ingest HTTP flow: upload → job completes → channel airs the asset.
 
 FastAPI background tasks run synchronously under TestClient, so the eager
-path completes before the POST returns — no broker needed.
+path completes before the POST returns; no broker needed.
 """
 
 import shutil
@@ -86,3 +86,45 @@ def test_upload_then_channel_airs_it(client, tmp_path):
     assert m.text.startswith("#EXTM3U")
     now = client.get("/channel/demo/now").json()
     assert now["on_air"]["asset_id"] == asset_id
+
+
+@pytest.mark.parametrize(
+    "raw, expected",
+    [
+        ("movie.mp4", "movie.mp4"),
+        ("../../etc/passwd", "passwd"),
+        ("/etc/passwd", "passwd"),
+        ("..\\..\\evil.mp4", "evil.mp4"),
+        ("..", "source"),
+        (".", "source"),
+        ("", "source"),
+        (None, "source"),
+    ],
+)
+def test_safe_filename_drops_path_components(raw, expected):
+    from app.routers.ingest import _safe_filename
+
+    assert _safe_filename(raw) == expected
+
+
+def test_upload_filename_cannot_escape_upload_dir(client, tmp_path):
+    r = client.post(
+        "/ingest",
+        data={"title": "Escape"},
+        files={"file": ("../../escaped.bin", b"not a video", "application/octet-stream")},
+    )
+    assert r.status_code == 202
+    assert not (tmp_path / "escaped.bin").exists()
+    assert not (tmp_path.parent / "escaped.bin").exists()
+
+
+def test_upload_over_size_limit_is_rejected(client, tmp_path, monkeypatch):
+    monkeypatch.setattr(config, "MAX_UPLOAD_BYTES", 10)
+    r = client.post(
+        "/ingest",
+        data={"title": "Too Big"},
+        files={"file": ("big.bin", b"x" * 11, "application/octet-stream")},
+    )
+    assert r.status_code == 413
+    leftovers = [p for p in (tmp_path / "uploads").rglob("*") if p.is_file()]
+    assert leftovers == []

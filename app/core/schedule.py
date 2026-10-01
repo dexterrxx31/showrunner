@@ -3,12 +3,12 @@
 A schedule places assets at target offsets within a repeating cycle; the space
 around and between them is tiled with a looping filler asset so the channel is
 never off air. The whole cycle is flattened once into a segment list, then
-resolved against the wall clock exactly like the looping timeline — so the
+resolved against the wall clock exactly like the looping timeline, so the
 same drift-free, stateless, restart-safe properties hold, and the manifest
 generator consumes the identical `Window` contract.
 
 Timing is segment-quantized: filler is laid as whole segments, so a programme
-starts within one segment (~4s) of its target offset — the way real FAST
+starts within one segment (~4s) of its target offset, the way real FAST
 channels behave, and the reason the cycle can never accumulate drift (its
 length is the sum of its actual segments, not a nominal number).
 """
@@ -99,7 +99,7 @@ class _CycleSegment:
     duration: float
     asset_id: str
     asset_title: str
-    within_idx: int  # index within its source asset — drives continuity
+    within_idx: int  # index within its source asset; drives continuity
 
 
 @dataclass(frozen=True)

@@ -117,7 +117,7 @@ def test_single_asset_channel_loop_is_discontinuity():
     # loop point is a genuine decode discontinuity.
     a = Asset(id="a", title="A", segments=tuple(seg("a", i) for i in range(2)))
     tl = LoopingTimeline([a], epoch=EPOCH)
-    first_loop = tl.window(at(9), size=1)  # global index 2 — first restart
+    first_loop = tl.window(at(9), size=1)  # global index 2, first restart
     assert first_loop.segments[0].discontinuity
     assert first_loop.media_sequence == 2
     assert first_loop.discontinuity_sequence == 0  # tag is here, not before it
@@ -169,7 +169,7 @@ def test_discontinuity_accounting_invariant(timeline):
 
 
 def test_consecutive_windows_never_gap(timeline):
-    # Windows one target-duration apart must overlap or abut — never skip a
+    # Windows one target-duration apart must overlap or abut; never skip a
     # segment, which would show as a stall in the player.
     step = timeline.target_duration
     for t in range(0, 200, step):

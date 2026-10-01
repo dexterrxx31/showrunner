@@ -1,6 +1,6 @@
 """SQLAlchemy engine + session management.
 
-One code path serves both dev/test (SQLite) and production (Postgres) — the
+One code path serves both dev/test (SQLite) and production (Postgres); the
 only difference is the DATABASE_URL. Engine and sessionmaker are cached but
 resettable so tests can point at a temp database.
 """
@@ -50,7 +50,7 @@ def get_sessionmaker() -> sessionmaker:
 
 
 def reset_engine() -> None:
-    """Drop cached engine/sessionmaker — used by tests switching databases."""
+    """Drop cached engine/sessionmaker: used by tests switching databases."""
     global _engine, _SessionLocal
     if _engine is not None:
         _engine.dispose()
@@ -59,7 +59,7 @@ def reset_engine() -> None:
 
 
 def init_db() -> None:
-    from app import models  # noqa: F401 — register tables
+    from app import models  # noqa: F401  # register tables
 
     Base.metadata.create_all(get_engine())
 

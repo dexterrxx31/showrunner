@@ -3,7 +3,7 @@
 Schedules are per-channel. `PUT /channels/{id}/schedule` (and the legacy
 `/schedule`, which targets `demo`) replaces a channel's schedule atomically,
 validating with the shared `validate_schedule` rules and rejecting (422) before
-persisting anything — so a channel never airs an overlapping or out-of-bounds
+persisting anything, so a channel never airs an overlapping or out-of-bounds
 programme. The AI director uses the same write path.
 """
 

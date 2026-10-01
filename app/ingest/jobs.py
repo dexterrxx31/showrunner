@@ -7,6 +7,7 @@ the Celery worker (production). Either way the status lives in the database, so
 
 from __future__ import annotations
 
+import logging
 from pathlib import Path
 
 from app import config
@@ -14,6 +15,8 @@ from app.db import session_scope
 from app.ingest.pipeline import ingest_asset
 from app.models import AssetRow, IngestJobRow
 from app.storage import get_store
+
+logger = logging.getLogger(__name__)
 
 
 def _set_status(job_id: str, status: str, *, error: str | None = None, segment_count: int | None = None) -> None:
@@ -44,7 +47,8 @@ def run_ingest_job(job_id: str, input_path: str, asset_id: str, title: str) -> N
             )
         _set_status(job_id, "done", segment_count=len(asset.segments))
         _invalidate_channel()
-    except Exception as e:  # noqa: BLE001 — record any failure for the caller
+    except Exception as e:  # noqa: BLE001  # record any failure for the caller
+        logger.exception("ingest job %s failed", job_id)
         _set_status(job_id, "error", error=str(e))
     finally:
         _cleanup(input_path)
@@ -52,14 +56,14 @@ def run_ingest_job(job_id: str, input_path: str, asset_id: str, title: str) -> N
 
 def _invalidate_channel() -> None:
     # Same-process eager path: drop the cached timeline so the new asset airs.
-    # (Distributed workers can't reach the API's memory; the Phase-3 scheduler
-    # will own timeline construction and cross-process invalidation.)
+    # Distributed workers can't reach the API's memory, so this is best effort
+    # and a failure must not fail an otherwise successful ingest.
     try:
         import app.routers.channel as channel
 
         channel.reset_timeline()
     except Exception:
-        pass
+        logger.warning("timeline cache invalidation failed", exc_info=True)
 
 
 def _cleanup(input_path: str) -> None:

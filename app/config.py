@@ -22,8 +22,9 @@ if CHANNEL_EPOCH.tzinfo is None:
 # --- ingest ----------------------------------------------------------------
 UPLOAD_DIR = os.environ.get("SHOWRUNNER_UPLOAD_DIR", "data/uploads")
 WORK_DIR = os.environ.get("SHOWRUNNER_WORK_DIR", "data/work")
+MAX_UPLOAD_BYTES = int(os.environ.get("SHOWRUNNER_MAX_UPLOAD_BYTES", str(4 * 1024**3)))
 
-# Uniform normalization ladder — every asset is transcoded to this exact spec
+# Uniform normalization ladder: every asset is transcoded to this exact spec
 # so segments from different assets are interchangeable at playout time.
 NORMALIZE_WIDTH = int(os.environ.get("SHOWRUNNER_WIDTH", "1280"))
 NORMALIZE_HEIGHT = int(os.environ.get("SHOWRUNNER_HEIGHT", "720"))

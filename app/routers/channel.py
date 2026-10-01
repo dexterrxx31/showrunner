@@ -55,7 +55,7 @@ def _build_timeline(channel_id: str):
 
     if schedule is not None:
         return ScheduledTimeline(schedule, epoch=epoch)
-    # No schedule for this channel — loop the whole catalog.
+    # No schedule for this channel: loop the whole catalog.
     return LoopingTimeline(assets, epoch=epoch)
 
 

@@ -90,7 +90,7 @@ def main() -> None:
     CATALOG.write_text(json.dumps(catalog, indent=2))
     total = sum(s["duration"] for a in catalog["assets"] for s in a["segments"])
     n = sum(len(a["segments"]) for a in catalog["assets"])
-    print(f"wrote {CATALOG} — {len(catalog['assets'])} assets, "
+    print(f"wrote {CATALOG}: {len(catalog['assets'])} assets, "
           f"{n} segments, {total:.1f}s cycle")
 
 
