@@ -1,4 +1,4 @@
-"""Electronic programme guide — project the cyclic schedule onto real time.
+"""Electronic programme guide: project the cyclic schedule onto real time.
 
 The channel's `programme_blocks()` describe one cycle; the EPG repeats them
 across the requested window and stamps absolute start/stop times. Output is

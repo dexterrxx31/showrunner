@@ -3,7 +3,7 @@
 The store persists segment bytes somewhere the delivery layer (nginx/CDN in
 prod, the app's static mount in dev) can find them. The catalog always records
 a relative `/segments/{asset}/{file}` URI so manifests stay portable across
-backends — the store just decides where the bytes physically live.
+backends; the store just decides where the bytes physically live.
 """
 
 from __future__ import annotations

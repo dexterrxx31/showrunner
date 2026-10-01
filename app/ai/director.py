@@ -1,12 +1,12 @@
-"""AI programming director — turn a natural-language brief into a schedule.
+"""AI programming director: turn a natural-language brief into a schedule.
 
 Claude inspects the catalog through tool calls and submits a schedule; the
 server-side `validate_schedule` is the safety rail. The LLM proposes, the
-deterministic validator disposes — the engine only ever airs a schedule that
+deterministic validator disposes; the engine only ever airs a schedule that
 passed validation, and Claude iterates on any violations it's handed back.
 
 The client is injected so the whole tool-use loop (including validation and
-self-correction) is testable with a scripted fake — no API key needed in CI.
+self-correction) is testable with a scripted fake; no API key needed in CI.
 Live use needs ANTHROPIC_API_KEY; `make_client()` enforces that.
 """
 
@@ -32,7 +32,7 @@ seconds, and any genre/rating/year metadata). Then call submit_schedule with:
 
 Rules:
   - Entries must not overlap and must fit within the cycle period.
-  - Use the metadata to honour the brief — e.g. keep higher-rated titles after
+  - Use the metadata to honour the brief, e.g. keep higher-rated titles after
     a watershed, group by genre or era when asked.
   - Timing is segment-accurate (~4s); exact-to-the-second offsets aren't needed.
   - If submit_schedule returns violations, fix them and submit again.
@@ -169,7 +169,7 @@ def _evaluate(inp: dict, period: float, assets_by_id: dict[str, Asset]):
 def build_schedule(brief: str, period_seconds: float, session, client, *, model=MODEL) -> dict:
     summary, assets_by_id = _catalog(session)
     if not summary:
-        raise DirectorError("catalog is empty — ingest assets before generating a schedule")
+        raise DirectorError("catalog is empty; ingest assets before generating a schedule")
 
     messages = [
         {

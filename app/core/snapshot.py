@@ -2,8 +2,8 @@
 
 This is the control-plane → data-plane handoff. Python owns scheduling (the
 hard, infrequent work: resolving programmes, filler, discontinuities); it emits
-a flat description of one cycle that any stateless origin — the Go service in
-`go-origin/` — can serve manifests from with pure arithmetic. The snapshot
+a flat description of one cycle that any stateless origin, the Go service in
+`go-origin/`, can serve manifests from with pure arithmetic. The snapshot
 carries precomputed discontinuity flags so the origin never re-derives them.
 """
 
@@ -22,7 +22,7 @@ def export_snapshot(timeline) -> dict:
     """Build a snapshot from a LoopingTimeline or ScheduledTimeline.
 
     Works through the public window() output so both timeline types export
-    identically — the snapshot is exactly what the origin needs and nothing
+    identically; the snapshot is exactly what the origin needs and nothing
     about the timeline's internals leaks in.
     """
     n = timeline._n
@@ -82,7 +82,7 @@ def _disc_before(snap: dict, g: int) -> int:
 
 
 def render_from_snapshot(snap: dict, now: datetime, size: int = 5) -> str:
-    """Render a manifest purely from a snapshot — the reference the Go origin
+    """Render a manifest purely from a snapshot: the reference the Go origin
     mirrors. Reuses render_media_playlist so it is byte-identical to the
     canonical output by construction; the Go port is validated against it."""
     epoch = datetime.fromisoformat(snap["epoch"])

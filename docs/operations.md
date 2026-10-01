@@ -21,6 +21,7 @@ All settings are environment variables (see `.env.example`).
 |---|---|---|
 | `SHOWRUNNER_SEGMENT_DIR` | `data/segments` | Where segments live (local storage) |
 | `SHOWRUNNER_UPLOAD_DIR` / `SHOWRUNNER_WORK_DIR` | `data/uploads` · `data/work` | Ingest scratch dirs |
+| `SHOWRUNNER_MAX_UPLOAD_BYTES` | `4294967296` (4 GiB) | Max `/ingest` upload size; larger uploads get 413 |
 | `SHOWRUNNER_WIDTH` / `HEIGHT` / `FPS` | `1280` · `720` · `25` | Uniform ladder video spec |
 | `SHOWRUNNER_SEGMENT_SECONDS` | `4` | Target segment length |
 | `SHOWRUNNER_AUDIO_BITRATE` | `128k` | Audio bitrate |
@@ -29,7 +30,7 @@ All settings are environment variables (see `.env.example`).
 | Variable | Default | Purpose |
 |---|---|---|
 | `SHOWRUNNER_STORAGE` | `local` | `local` or `s3` (MinIO/S3) |
-| `SHOWRUNNER_S3_ENDPOINT` / `_BUCKET` / `_ACCESS_KEY` / `_SECRET_KEY` / `_REGION` | — | S3 backend |
+| `SHOWRUNNER_S3_ENDPOINT` / `_BUCKET` / `_ACCESS_KEY` / `_SECRET_KEY` / `_REGION` | - | S3 backend |
 | `SHOWRUNNER_BROKER` | _(empty)_ | Celery broker URL; empty runs ingest in-process |
 | `SHOWRUNNER_ENCODE_DIR` | `data/encoded` | True-encode output dir |
 | `SHOWRUNNER_ENCODE_FONT` | _(auto)_ | Branding font path; auto-detected if unset |
@@ -47,7 +48,7 @@ pip install -r requirements.txt -r requirements-dev.txt
 python scripts/make_demo_assets.py      # synthetic demo assets
 uvicorn app.main:app --reload           # http://localhost:8000/
 ```
-Defaults to SQLite + local disk + in-process ingest — no Postgres/Redis/MinIO.
+Defaults to SQLite + local disk + in-process ingest; no Postgres/Redis/MinIO.
 
 ### Full stack (Docker)
 ```bash
@@ -55,7 +56,7 @@ docker compose up                       # app only (demo catalog)
 docker compose --profile full up        # + Postgres, Redis, MinIO, Celery worker
 ```
 The `full` profile wires the worker to Postgres/Redis and segment storage to
-MinIO — flip `SHOWRUNNER_CATALOG_SOURCE=db` to serve ingested content.
+MinIO; flip `SHOWRUNNER_CATALOG_SOURCE=db` to serve ingested content.
 
 ## Production topology
 
@@ -68,15 +69,15 @@ MinIO — flip `SHOWRUNNER_CATALOG_SOURCE=db` to serve ingested content.
             static segments (cached at the edge)
 ```
 
-- **Segments** are static files — serve them from nginx or a CDN, never from
+- **Segments** are static files; serve them from nginx or a CDN, never from
   the app. They're ~99.9% of the bytes and the app never needs to touch them.
 - **Manifests** are tiny and cached 1s; front them with the same CDN
   (`Cache-Control: max-age=1` lets the edge collapse the fan-out).
-- **Origins are stateless** — run as many replicas as you like behind the load
+- **Origins are stateless**: run as many replicas as you like behind the load
   balancer; they agree byte-for-byte. Use the Go origin for the highest
   throughput (below).
 - **Control plane** (ingest, scheduling, the AI director) runs separately from
-  the data plane and can scale independently — it's not on the viewer path.
+  the data plane and can scale independently; it's not on the viewer path.
 
 ## Performance & the Go origin
 
@@ -98,18 +99,18 @@ Same channel, one process each, `wrk -t4 -c64 -d10s` (Apple Silicon):
 
 | Origin | Requests/sec | p50 latency |
 |---|---:|---:|
-| Python — FastAPI + uvicorn (1 worker) | ~8,900 | 7.6 ms |
-| Go — net/http | ~147,000 | 0.5 ms |
+| Python, FastAPI + uvicorn (1 worker) | ~8,900 | 7.6 ms |
+| Go, net/http | ~147,000 | 0.5 ms |
 
 Reproduce with `./scripts/bench.sh`. uvicorn scales with more workers (~1 per
 core); the Go process scales across cores on its own.
 
 ## Verifying a channel
 
-- **Soak (simulated)** — `pytest tests/test_soak.py` fast-forwards a full 24h
+- **Soak (simulated)**: `pytest tests/test_soak.py` fast-forwards a full 24h
   through the resolver, asserting no gaps, monotonic sequences, exact
   `PROGRAM-DATE-TIME`, and zero drift.
-- **Soak (live)** — `python scripts/soak.py --url http://localhost:8000
+- **Soak (live)**: `python scripts/soak.py --url http://localhost:8000
   --duration 300` polls a running server, measuring real drift and stalls and
   checking every referenced segment is fetchable. `--ffmpeg-check` also decodes
   the stream. `--duration 86400` for a full day.
@@ -121,16 +122,16 @@ pytest                       # Python suite (ffmpeg-gated tests skip without ffm
 cd go-origin && go test ./...  # Go origin against the Python golden fixtures
 ```
 CI runs both jobs on every push. If you change the manifest renderer, regenerate
-the Go fixtures (`python scripts/gen_go_fixtures.py`) and commit them — a test
+the Go fixtures (`python scripts/gen_go_fixtures.py`) and commit them; a test
 fails if they drift.
 
 ## Operational notes
 
-- **Schema changes** (new columns) require a fresh database in dev — showrunner
+- **Schema changes** (new columns) require a fresh database in dev; showrunner
   uses `create_all`, not migrations. Add Alembic before running a long-lived
   production database.
 - **True-encode** needs segments on local disk (not S3) and an ffmpeg with
   `drawtext` for the channel-name overlay; without it, branding degrades to a
   plain bar automatically.
-- **Epoch must be in the past** — a future epoch makes `/playlist.m3u8` return
+- **Epoch must be in the past**: a future epoch makes `/playlist.m3u8` return
   404 ("channel not started").

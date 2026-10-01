@@ -1,7 +1,7 @@
 """Timeline resolution: map wall-clock time onto the channel's playout position.
 
 Everything here is a pure function of (epoch, catalog, wall clock). No state,
-no ticking — any number of replicas compute the identical answer, and a
+no ticking: any number of replicas compute the identical answer, and a
 restart can never drift the channel.
 """
 

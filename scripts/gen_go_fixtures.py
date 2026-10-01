@@ -40,7 +40,7 @@ def asset(aid, n, d=4.0, title=None):
 
 def build_timeline() -> ScheduledTimeline:
     # Two programmes with uneven real-world durations, filler around/between,
-    # and an ad avail — exercises joins, filler loops, cues, and cycle wrap.
+    # and an ad avail; exercises joins, filler loops, cues, and cycle wrap.
     morning = Asset(
         id="morning",
         title="Morning Show",

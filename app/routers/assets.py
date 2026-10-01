@@ -1,7 +1,7 @@
 """Asset catalog endpoints: list assets and set programming metadata.
 
 Metadata (genre/rating/year) is what lets the AI director honour briefs like
-"90s action, family-friendly until 21:00" — set it here after ingest.
+"90s action, family-friendly until 21:00"; set it here after ingest.
 """
 
 from __future__ import annotations

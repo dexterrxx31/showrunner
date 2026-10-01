@@ -22,7 +22,7 @@ class AssetRow(Base):
     id: Mapped[str] = mapped_column(String, primary_key=True)
     title: Mapped[str] = mapped_column(String, nullable=False)
     position: Mapped[int] = mapped_column(Integer, default=0)
-    # Optional programming metadata — lets the AI director ground briefs like
+    # Optional programming metadata: lets the AI director ground briefs like
     # "90s action night, family-friendly until 21:00".
     genre: Mapped[str | None] = mapped_column(String, nullable=True)
     rating: Mapped[str | None] = mapped_column(String, nullable=True)
@@ -54,7 +54,7 @@ class SegmentRow(Base):
 class ChannelSettingsRow(Base):
     """A channel: its display name, epoch, filler, and cycle period.
 
-    One asset library, many channels — each programmes the shared catalog
+    One asset library, many channels; each programmes the shared catalog
     independently. The id is the channel slug used in URLs (`demo` by default).
     """
 

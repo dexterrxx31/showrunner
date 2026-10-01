@@ -103,7 +103,7 @@ def test_delete_channel_reverts_to_catalog_loop(client, monkeypatch):
     assert client.delete("/channels/news").status_code == 200
     assert "news" not in {c["id"] for c in client.get("/channels").json()}
 
-    # Channel id still resolves (loops the shared catalog) — not a 404/503.
+    # Channel id still resolves (loops the shared catalog); not a 404/503.
     monkeypatch.setattr(channel, "utcnow", lambda: EPOCH + timedelta(seconds=5))
     channel.reset_timeline()
     assert client.get("/channel/news/now").status_code == 200

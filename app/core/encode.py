@@ -2,7 +2,7 @@
 
 An alternative to the stateless manifest-stitching origin. Instead of pointing
 players at pre-cut segments, this re-encodes the channel's assets into a single
-continuous HLS stream with the channel's branding burned in — the way a
+continuous HLS stream with the channel's branding burned in, the way a
 traditional playout chain (Cinegy, Grass Valley) produces a channel. It trades
 the stateless/restart-safe properties for frame-accurate on-screen graphics.
 

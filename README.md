@@ -1,7 +1,7 @@
-# showrunner 📺
+# showrunner
 
 **An AI-programmed linear TV channel.** A cloud playout engine that turns a
-media library into a 24/7 HLS live stream — with Claude as the programming
+media library into a 24/7 HLS live stream, with Claude as the programming
 director.
 
 > *"Program Saturday evening as a 90s action night, family-friendly until
@@ -9,14 +9,14 @@ director.
 
 ![The demo channel on air](docs/demo.gif)
 
-*The live channel cycling through synthetic test-pattern assets — a continuous
+*The live channel cycling through synthetic test-pattern assets: a continuous
 HLS stream assembled from pre-cut segments with a discontinuity at each join.*
 
 ## How it works
 
 No video is processed at playout time. Assets are normalized to one uniform
 spec and pre-cut into HLS segments at ingest; the "channel" is a **stateless
-manifest generator** that maps wall clock + schedule onto pre-cut segments —
+manifest generator** that maps wall clock + schedule onto pre-cut segments,
 the same manifest-stitching architecture behind most FAST channels
 (Pluto TV-style). Because every manifest is a pure function of
 `(epoch, catalog, schedule, wall clock)`, replicas agree byte-for-byte,
@@ -34,7 +34,7 @@ Requires Python 3.12+ and FFmpeg.
 python -m venv .venv && source .venv/bin/activate
 pip install -r requirements.txt -r requirements-dev.txt
 
-# Generate synthetic demo assets (FFmpeg test sources — no real media needed)
+# Generate synthetic demo assets (FFmpeg test sources: no real media needed)
 python scripts/make_demo_assets.py
 
 # Start the channel
@@ -83,12 +83,12 @@ curl -F "title=Late Night Movie" -F "file=@movie.mp4" http://localhost:8000/inge
 
 Ingest runs in-process by default (no broker needed). Set `SHOWRUNNER_BROKER`
 to route it to a Celery worker, and `SHOWRUNNER_STORAGE=s3` to store segments
-in MinIO/S3 — see `docker compose --profile full up`.
+in MinIO/S3; see `docker compose --profile full up`.
 
 ## Programming a schedule
 
 Without a schedule the channel simply loops the whole catalog. Define a
-programme schedule — assets at target offsets within a repeating cycle, with a
+programme schedule: assets at target offsets within a repeating cycle, with a
 filler asset looping to cover every gap:
 
 ```bash
@@ -108,7 +108,7 @@ which is what keeps the cycle drift-free. `DELETE /schedule` reverts to
 looping the catalog.
 
 Add `ad_breaks` (offset + duration within the cycle) to emit
-`EXT-X-CUE-OUT`/`EXT-X-CUE-IN` markers in the manifest — the ad avails an
+`EXT-X-CUE-OUT`/`EXT-X-CUE-IN` markers in the manifest; the ad avails an
 SSAI/SCTE-35 system replaces with real ads:
 
 ```json
@@ -123,8 +123,8 @@ SSAI/SCTE-35 system replaces with real ads:
 pytest -v
 ```
 
-The test suite covers the timeline resolver's edge cases — asset joins, cycle
-wrap, discontinuity sequencing, drift over 1000 cycles — because that math is
+The test suite covers the timeline resolver's edge cases (asset joins, cycle
+wrap, discontinuity sequencing, drift over 1000 cycles) because that math is
 where playout engines live or die.
 
 ## AI programming director
@@ -145,12 +145,12 @@ curl -X POST http://localhost:8000/schedule/generate \
 Claude inspects the catalog via tool calls and submits a schedule; the server
 validates it with the same rules as `PUT /schedule` and hands back any
 violations for Claude to fix. The engine only ever airs a schedule that passed
-validation — the model proposes, deterministic validation disposes. The
+validation: the model proposes, deterministic validation disposes. The
 accepted schedule is persisted and goes live immediately.
 
 ## Multiple channels
 
-One asset library can drive many independent channels — each with its own name,
+One asset library can drive many independent channels, each with its own name,
 epoch, schedule, and ad breaks:
 
 ```bash
@@ -166,7 +166,7 @@ schedule. The Go origin serves them all from a directory of snapshots
 ## True-encode mode (optional)
 
 Manifest-stitching is the default (stateless, restart-safe). For channels that
-need **burned-in graphics** — a channel bug, a lower-third — there's an
+need **burned-in graphics** (a channel bug, a lower-third), there's an
 alternative that runs a continuous FFmpeg process re-encoding the channel into
 one branded stream, the way a traditional playout chain works:
 
@@ -181,12 +181,12 @@ degrades to a plain lower-third bar if the local ffmpeg lacks `drawtext`.
 
 ## Performance: the Go manifest origin
 
-The manifest is the hot path — every viewer polls it every few seconds — but
+The manifest is the hot path (every viewer polls it every few seconds) but
 it's a pure function of the wall clock, so it can be served by a stateless
 origin with no database or scheduler. `showrunner` splits along that line:
 
-- **Control plane (Python)** owns the hard, infrequent work — ingest,
-  scheduling, discontinuity resolution — and compiles the schedule into a
+- **Control plane (Python)** owns the hard, infrequent work (ingest,
+  scheduling, discontinuity resolution) and compiles the schedule into a
   **cycle snapshot** (`python scripts/export_snapshot.py`).
 - **Data plane (Go, `go-origin/`)** serves manifests from the snapshot with
   pure arithmetic, re-implementing only `render_media_playlist`.
@@ -200,8 +200,8 @@ process each):
 
 | Origin | Requests/sec | p50 latency |
 |---|---:|---:|
-| Python — FastAPI + uvicorn (1 worker) | ~8,900 | 7.6 ms |
-| Go — net/http | ~147,000 | 0.5 ms |
+| Python, FastAPI + uvicorn (1 worker) | ~8,900 | 7.6 ms |
+| Go, net/http | ~147,000 | 0.5 ms |
 
 **~16× throughput**, reproducible with `./scripts/bench.sh`. (uvicorn scales
 with more workers, ~1 per core; the Go process scales across cores on its own.)
@@ -209,7 +209,7 @@ with more workers, ~1 per core; the Go process scales across cores on its own.)
 ## Soak testing
 
 The channel is a pure function of the wall clock, so 24 hours of playout can be
-verified deterministically — `tests/test_soak.py` fast-forwards a full day and
+verified deterministically: `tests/test_soak.py` fast-forwards a full day and
 asserts no gaps, monotonic sequences, exact PROGRAM-DATE-TIME continuity, and a
 live edge that always tracks real time (zero drift).
 
@@ -225,7 +225,7 @@ segment is fetchable, and exits non-zero on any violation.
 
 ## Status
 
-All seven phases of the [roadmap](PLAN.md#5-phased-roadmap) complete — from a
+All seven phases of the [roadmap](PLAN.md#5-phased-roadmap) complete: from a
 fake-live spike to an AI-programmed channel with a Go manifest origin. 81
 Python tests + a Go golden test, CI green on both.
 

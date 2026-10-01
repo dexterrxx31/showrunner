@@ -1,7 +1,7 @@
 """24-hour soak, simulated deterministically.
 
 Fast-forwards a full day of playout through the resolver and asserts the
-properties a real soak would check — no gaps, monotonic sequences, exact
+properties a real soak would check: no gaps, monotonic sequences, exact
 program-date-time continuity, and a live edge that always contains the wall
 clock (i.e. zero drift). Because the timeline is a pure function of the clock,
 this is a proof rather than a sampling: every segment in the day is visited.
@@ -94,7 +94,7 @@ def test_wallclock_edge_never_drifts_or_stalls():
         w = tl.window(now, size=6)
         last = w.segments[-1]
         edge = (last.program_datetime - EPOCH).total_seconds()
-        # 'now' falls within the current (live-edge) segment — no stall, no drift.
+        # 'now' falls within the current (live-edge) segment; no stall, no drift.
         assert edge - 1e-6 <= t < edge + last.duration + 1e-6
         assert w.media_sequence >= prev_media
         prev_media = w.media_sequence

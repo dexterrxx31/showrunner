@@ -11,3 +11,4 @@ data/*.db
 go-origin/origin
 go-origin/*.test
 data/encoded/
+.DS_Store

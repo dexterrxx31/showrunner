@@ -21,7 +21,7 @@ def load_catalog(path: str | Path) -> list[Asset]:
     p = Path(path)
     if not p.exists():
         raise CatalogNotFound(
-            f"no catalog at {p} — run `python scripts/make_demo_assets.py` first"
+            f"no catalog at {p}; run `python scripts/make_demo_assets.py` first"
         )
     raw = json.loads(p.read_text())
     assets = []
@@ -39,7 +39,7 @@ def load_catalog(path: str | Path) -> list[Asset]:
 def load_catalog_from_db(session) -> list[Asset]:
     """Build the channel's asset list from ingested catalog rows.
 
-    Order is `position` then `created_at` — a stand-in for real programming
+    Order is `position` then `created_at`: a stand-in for real programming
     until the Phase-3 scheduler owns ordering. Assets with no segments are
     skipped (an ingest that failed mid-way leaves nothing playable).
     """
@@ -58,7 +58,7 @@ def load_catalog_from_db(session) -> list[Asset]:
         if segments:
             assets.append(Asset(id=r.id, title=r.title, segments=segments))
     if not assets:
-        raise CatalogNotFound("no assets ingested yet — POST a file to /ingest")
+        raise CatalogNotFound("no assets ingested yet; POST a file to /ingest")
     return assets
 
 
@@ -66,7 +66,7 @@ def load_schedule_from_db(session, catalog: dict[str, Asset], channel_id: str = 
     """Build a channel's ScheduleDef from DB rows, or None if none is defined.
 
     Returns None (channel falls back to looping the catalog) when there are no
-    entries, no filler is set, or a referenced asset is missing — the schedule
+    entries, no filler is set, or a referenced asset is missing; the schedule
     endpoint's validator prevents the last case for schedules created via the
     API, but a later catalog deletion could leave a dangling reference.
     """
@@ -106,7 +106,7 @@ def load_schedule_from_db(session, catalog: dict[str, Asset], channel_id: str = 
 
 
 def channel_epoch(session, channel_id: str = "demo"):
-    """The channel's epoch — its own if set, else the global default."""
+    """The channel's epoch: its own if set, else the global default."""
     from datetime import datetime, timezone
 
     from app import config
