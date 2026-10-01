@@ -123,3 +123,8 @@ def test_encode_produces_live_hls(tmp_path):
     assert playlist.exists(), "encoder did not produce a playlist"
     assert list(out.glob("seg_*.ts")), "encoder did not produce segments"
     assert "#EXTM3U" in playlist.read_text()
+
+
+def test_branding_filter_disables_text_expansion():
+    f = branding_filter("%{localtime}", "/fonts/x.ttf")
+    assert "expansion=none" in f

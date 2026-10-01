@@ -15,7 +15,7 @@ from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, Field
 
 import app.routers.channel as channel
-from app.core.catalog import CatalogNotFound, load_catalog_from_db
+from app.core.catalog import CHANNEL_ID_PATTERN, CatalogNotFound, load_catalog_from_db
 from app.core.schedule import validate_schedule
 from app.db import session_scope
 from app.models import AdBreakRow, ChannelSettingsRow, ScheduleEntryRow
@@ -41,7 +41,7 @@ class ScheduleIn(BaseModel):
 
 
 class ChannelIn(BaseModel):
-    id: str
+    id: str = Field(pattern=CHANNEL_ID_PATTERN)
     name: str | None = None
     epoch: str | None = None  # ISO 8601; defaults to the global epoch
 
