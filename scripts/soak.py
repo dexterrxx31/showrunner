@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Live soak test: poll a running channel and measure drift and stalls.
 
-Runs against a real server over real time — the unattended check the
+Runs against a real server over real time: the unattended check the
 simulation can't do (network, caching, static delivery, wall-clock skew).
 Defaults to a short run; pass --duration 86400 for the full 24 hours.
 
@@ -87,7 +87,8 @@ def _segment_ok(base: str, uri: str) -> bool:
     try:
         with urllib.request.urlopen(req, timeout=10.0) as r:
             return r.status in (200, 206)
-    except Exception:
+    except Exception as e:  # noqa: BLE001  # any fetch failure counts as a bad segment
+        print(f"  segment check failed for {seg_url}: {e}")
         return False
 
 
@@ -165,7 +166,7 @@ def _ffmpeg_check(manifest_url: str, rep: Report) -> Report:
         if r.returncode != 0:
             rep.violations.append(f"ffmpeg failed to decode: {r.stderr.strip()[:300]}")
     except FileNotFoundError:
-        print("  ffmpeg not installed — skipping decode check")
+        print("  ffmpeg not installed; skipping decode check")
     except subprocess.TimeoutExpired:
         rep.violations.append("ffmpeg decode check timed out")
     return rep
@@ -191,7 +192,7 @@ def main() -> int:
         for v in rep.violations[:20]:
             print(f"  - {v}")
         return 1
-    print("result:           OK — no stalls, no drift, no gaps")
+    print("result:           OK: no stalls, no drift, no gaps")
     return 0
 
 
