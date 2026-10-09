@@ -48,14 +48,18 @@ def find_default_font() -> str | None:
 
 
 def branding_filter(channel_name: str, fontfile: str | None) -> str:
-    """A translucent lower-third bar, with the channel name if a font exists."""
+    """A translucent lower-third bar, with the channel name if a font exists.
+
+    expansion=none stops drawtext from interpreting %{...} sequences in a
+    user-supplied channel name.
+    """
     bar = "drawbox=x=0:y=ih-64:w=iw:h=64:color=black@0.55:t=fill"
     if not fontfile:
         return bar
     text = channel_name.replace("\\", "").replace(":", r"\:").replace("'", "")
     label = (
         f"drawtext=fontfile={fontfile}:text='{text}'"
-        ":x=24:y=h-46:fontsize=30:fontcolor=white"
+        ":x=24:y=h-46:fontsize=30:fontcolor=white:expansion=none"
     )
     return f"{bar},{label}"
 

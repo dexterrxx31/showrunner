@@ -1,23 +1,27 @@
 """AI programming director: turn a natural-language brief into a schedule.
 
-Claude inspects the catalog through tool calls and submits a schedule; the
+The model inspects the catalog through tool calls and submits a schedule; the
 server-side `validate_schedule` is the safety rail. The LLM proposes, the
 deterministic validator disposes; the engine only ever airs a schedule that
-passed validation, and Claude iterates on any violations it's handed back.
+passed validation, and the model iterates on any violations it's handed back.
+
+Providers (see app/ai/providers.py): anthropic (Claude), google (Gemini) and
+meta (Llama via an OpenAI-compatible host).
 
 The client is injected so the whole tool-use loop (including validation and
 self-correction) is testable with a scripted fake; no API key needed in CI.
-Live use needs ANTHROPIC_API_KEY; `make_client()` enforces that.
+Live use needs the chosen provider's credentials; `make_client()` enforces that.
 """
 
 from __future__ import annotations
 
 import json
 
+from app.ai.providers import ProviderError, ProviderUnavailable, get_provider
 from app.core.schedule import validate_schedule
 from app.core.timeline import Asset, Segment
 
-MODEL = "claude-opus-4-8"
+DEFAULT_PROVIDER = "anthropic"
 MAX_ITERATIONS = 12
 
 SYSTEM = """You are the programming director for a linear TV channel.
@@ -90,16 +94,15 @@ class DirectorError(Exception):
     """The director ran but couldn't produce a valid schedule."""
 
 
-def make_client():
-    import os
+class DirectorUpstreamError(Exception):
+    """The model provider's API failed (billing, auth, unknown model, outage)."""
 
-    if not (os.environ.get("ANTHROPIC_API_KEY") or os.environ.get("ANTHROPIC_AUTH_TOKEN")):
-        raise DirectorUnavailable(
-            "set ANTHROPIC_API_KEY to use the AI programming director"
-        )
-    import anthropic
 
-    return anthropic.Anthropic()
+def make_client(provider: str = DEFAULT_PROVIDER):
+    try:
+        return get_provider(provider).make_client()
+    except ProviderUnavailable as e:
+        raise DirectorUnavailable(str(e)) from e
 
 
 def _catalog(session):
@@ -166,53 +169,59 @@ def _evaluate(inp: dict, period: float, assets_by_id: dict[str, Asset]):
     return accepted, []
 
 
-def build_schedule(brief: str, period_seconds: float, session, client, *, model=MODEL) -> dict:
+def build_schedule(
+    brief: str,
+    period_seconds: float,
+    session,
+    client,
+    *,
+    provider: str = DEFAULT_PROVIDER,
+    model: str | None = None,
+) -> dict:
     summary, assets_by_id = _catalog(session)
     if not summary:
         raise DirectorError("catalog is empty; ingest assets before generating a schedule")
 
-    messages = [
-        {
-            "role": "user",
-            "content": (
-                f"Programming brief: {brief}\n\n"
-                f"The channel cycle period is {period_seconds:.0f} seconds. "
-                f"Schedule programmes within [0, {period_seconds:.0f}] seconds."
-            ),
-        }
-    ]
+    try:
+        spec = get_provider(provider)
+    except ProviderUnavailable as e:
+        raise DirectorUnavailable(str(e)) from e
+    conversation = spec.conversation(
+        client,
+        model or spec.resolved_model(),
+        SYSTEM,
+        TOOLS,
+        (
+            f"Programming brief: {brief}\n\n"
+            f"The channel cycle period is {period_seconds:.0f} seconds. "
+            f"Schedule programmes within [0, {period_seconds:.0f}] seconds."
+        ),
+    )
 
     for _ in range(MAX_ITERATIONS):
-        response = client.messages.create(
-            model=model,
-            max_tokens=16000,
-            thinking={"type": "adaptive"},
-            system=SYSTEM,
-            tools=TOOLS,
-            messages=messages,
-        )
-        if response.stop_reason != "tool_use":
+        try:
+            calls = conversation.step()
+        except ProviderError as e:
+            raise DirectorUpstreamError(f"{provider} provider request failed: {e}") from e
+        if not calls:
             break
 
-        messages.append({"role": "assistant", "content": response.content})
         results = []
         accepted = None
-        for block in response.content:
-            if getattr(block, "type", None) != "tool_use":
-                continue
-            if block.name == "list_assets":
+        for call in calls:
+            if call.input is None:
+                content = json.dumps({"error": "tool arguments were not valid JSON"})
+            elif call.name == "list_assets":
                 content = json.dumps({"period_seconds": period_seconds, "assets": summary})
-            elif block.name == "submit_schedule":
-                accepted, violations = _evaluate(block.input, period_seconds, assets_by_id)
+            elif call.name == "submit_schedule":
+                accepted, violations = _evaluate(call.input, period_seconds, assets_by_id)
                 content = json.dumps(
                     {"ok": True} if accepted else {"ok": False, "violations": violations}
                 )
             else:
-                content = json.dumps({"error": f"unknown tool {block.name}"})
-            results.append(
-                {"type": "tool_result", "tool_use_id": block.id, "content": content}
-            )
-        messages.append({"role": "user", "content": results})
+                content = json.dumps({"error": f"unknown tool {call.name}"})
+            results.append((call.id, content))
+        conversation.reply(results)
 
         if accepted is not None:
             return accepted

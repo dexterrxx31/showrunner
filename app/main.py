@@ -1,7 +1,7 @@
 from contextlib import asynccontextmanager
 from pathlib import Path
 
-from fastapi import FastAPI
+from fastapi import Depends, FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import RedirectResponse
 from fastapi.staticfiles import StaticFiles
@@ -14,6 +14,7 @@ from app.routers.encode import router as encode_router
 from app.routers.epg import router as epg_router
 from app.routers.ingest import router as ingest_router
 from app.routers.schedule import router as schedule_router
+from app.security import require_write_key
 
 
 @asynccontextmanager
@@ -25,11 +26,16 @@ async def lifespan(app: FastAPI):
     encoder.stop_all()  # don't leave orphaned FFmpeg processes
 
 
-app = FastAPI(title="showrunner", version="0.3.0", lifespan=lifespan)
+app = FastAPI(
+    title="showrunner",
+    version="0.3.0",
+    lifespan=lifespan,
+    dependencies=[Depends(require_write_key)],
+)
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=config.CORS_ORIGINS,
     allow_methods=["GET", "POST"],
     allow_headers=["*"],
 )

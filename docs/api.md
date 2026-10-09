@@ -131,14 +131,22 @@ Replace the schedule atomically. Validated before persisting.
 Clears the schedule; the channel reverts to looping the catalog.
 
 ### `POST /channels/{channel_id}/schedule/generate`
-AI director: generate and apply a schedule from a brief. Requires
-`ANTHROPIC_API_KEY`.
+AI director: generate and apply a schedule from a brief. Requires the chosen
+provider's credentials (`ANTHROPIC_API_KEY`, `GEMINI_API_KEY`, `GROQ_API_KEY`, or
+`LLAMA_BASE_URL`/`LLAMA_API_KEY`).
 ```json
-{"brief": "90s action night, family-friendly until 21:00", "period_seconds": 10800}
+{"brief": "90s action night, family-friendly until 21:00", "period_seconds": 10800,
+ "provider": "anthropic", "model": null}
 ```
+`provider` is `anthropic` (default), `google`, `groq` or `meta`; `model` defaults to the
+provider's default (`claude-opus-4-8`, `gemini-3.1-pro-preview`, `openai/gpt-oss-120b` for `groq`, `llama3.3` for `meta`), which
+`ANTHROPIC_MODEL`, `GEMINI_MODEL`, `GROQ_MODEL`, or `LLAMA_MODEL` override. An unknown
+provider is `422`.
 - `200` → `{"status": "ok", "channel_id": "...", "filler_asset_id": "...",
   "period_seconds": ..., "entries": [...], "ad_breaks": [...]}`
-- `503` → no API credentials · `422` → empty catalog / couldn't produce a valid
+- `502` → the provider's API failed (billing, auth, unknown model, outage); the detail names
+  the provider, HTTP status, and message · `503` → no credentials for the chosen provider ·
+  `422` → empty catalog / couldn't produce a valid
   schedule
 
 ---

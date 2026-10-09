@@ -19,6 +19,13 @@ CHANNEL_EPOCH = datetime.fromisoformat(_epoch_raw)
 if CHANNEL_EPOCH.tzinfo is None:
     CHANNEL_EPOCH = CHANNEL_EPOCH.replace(tzinfo=timezone.utc)
 
+# --- access control ---------------------------------------------------------
+# When set, POST/PUT/PATCH/DELETE require this key (X-API-Key or Bearer).
+API_KEY = os.environ.get("SHOWRUNNER_API_KEY", "")
+CORS_ORIGINS = [
+    o.strip() for o in os.environ.get("SHOWRUNNER_CORS_ORIGINS", "*").split(",") if o.strip()
+]
+
 # --- ingest ----------------------------------------------------------------
 UPLOAD_DIR = os.environ.get("SHOWRUNNER_UPLOAD_DIR", "data/uploads")
 WORK_DIR = os.environ.get("SHOWRUNNER_WORK_DIR", "data/work")

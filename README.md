@@ -130,7 +130,8 @@ where playout engines live or die.
 ## AI programming director
 
 Instead of hand-writing a schedule, describe what you want and let Claude
-build it. Set `ANTHROPIC_API_KEY`, tag assets with metadata, then:
+build it. Set `ANTHROPIC_API_KEY` (or see [Other models](#other-models)), tag
+assets with metadata, then:
 
 ```bash
 curl -X PATCH http://localhost:8000/assets/movie-xxxx \
@@ -147,6 +148,32 @@ validates it with the same rules as `PUT /schedule` and hands back any
 violations for Claude to fix. The engine only ever airs a schedule that passed
 validation: the model proposes, deterministic validation disposes. The
 accepted schedule is persisted and goes live immediately.
+
+### Other models
+
+The director also runs on Google Gemini and Meta Llama. Pick one per request
+with `provider` (`anthropic` default, `google`, `meta`) and an optional `model`:
+
+```bash
+curl -X POST http://localhost:8000/schedule/generate \
+  -H 'content-type: application/json' \
+  -d '{"brief": "cozy sci-fi marathon", "provider": "google", "model": "gemini-2.5-flash"}'
+```
+
+| Provider | Credentials | Default model |
+|---|---|---|
+| `anthropic` | `ANTHROPIC_API_KEY` | `claude-opus-4-8` |
+| `google` | `GEMINI_API_KEY` | `gemini-3.1-pro-preview` |
+| `groq` | `GROQ_API_KEY` | `openai/gpt-oss-120b` |
+| `meta` | `LLAMA_BASE_URL` (default local Ollama `http://localhost:11434/v1`), `LLAMA_API_KEY` if the host needs one | `llama3.3` |
+
+Gemini, Groq, and Llama use OpenAI-compatible chat completions (`pip install openai`).
+Set `ANTHROPIC_MODEL`, `GEMINI_MODEL`, `GROQ_MODEL`, or `LLAMA_MODEL` to change a provider's
+default model without a request-level `model`.
+Llama has no first-party hosted endpoint here, so `meta` points at whichever
+host you run: Ollama, Together, Groq, or Meta's Llama API. Set `model` to that
+host's model name. Smaller models may need more self-correction rounds; the
+validator is the same for all of them.
 
 ## Multiple channels
 

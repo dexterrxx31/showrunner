@@ -58,7 +58,7 @@ def test_generate_persists_and_airs(client, monkeypatch):
             ],
         ),
     ]
-    monkeypatch.setattr(director, "make_client", lambda: FakeClient(script))
+    monkeypatch.setattr(director, "make_client", lambda provider: FakeClient(script))
 
     r = client.post("/schedule/generate", json={"brief": "movie night", "period_seconds": 60})
     assert r.status_code == 200
@@ -81,6 +81,32 @@ def test_generate_503_without_credentials(client, monkeypatch):
     assert r.status_code == 503
 
 
+def test_generate_passes_provider_and_model(client, monkeypatch):
+    seen = {}
+
+    def fake_make_client(provider):
+        seen["provider"] = provider
+        return FakeClient([])
+
+    def fake_build(brief, period, session, client, *, provider, model):
+        seen["model"] = model
+        raise director.DirectorError("stop here")
+
+    monkeypatch.setattr(director, "make_client", fake_make_client)
+    monkeypatch.setattr(director, "build_schedule", fake_build)
+    r = client.post(
+        "/schedule/generate",
+        json={"brief": "x", "provider": "google", "model": "gemini-2.5-flash"},
+    )
+    assert r.status_code == 422
+    assert seen == {"provider": "google", "model": "gemini-2.5-flash"}
+
+
+def test_generate_rejects_unknown_provider(client):
+    r = client.post("/schedule/generate", json={"brief": "x", "provider": "nope"})
+    assert r.status_code == 422
+
+
 def test_list_and_patch_asset_metadata(client):
     assert {a["asset_id"] for a in client.get("/assets").json()} == {"movie", "ident"}
 
@@ -96,3 +122,34 @@ def test_list_and_patch_asset_metadata(client):
 
 def test_patch_unknown_asset_404(client):
     assert client.patch("/assets/ghost", json={"genre": "x"}).status_code == 404
+
+
+@pytest.mark.parametrize(
+    "exc, status",
+    [
+        (director.DirectorUpstreamError("anthropic provider request failed: HTTP 400: x"), 502),
+        (director.DirectorUnavailable("no credentials"), 503),
+    ],
+)
+def test_generate_maps_provider_failures(client, monkeypatch, exc, status):
+    def fake_build(brief, period, session, client, *, provider, model):
+        raise exc
+
+    monkeypatch.setattr(director, "make_client", lambda provider: FakeClient([]))
+    monkeypatch.setattr(director, "build_schedule", fake_build)
+    r = client.post("/schedule/generate", json={"brief": "x"})
+    assert r.status_code == status
+    assert str(exc) in r.json()["detail"]
+
+
+def test_generate_accepts_groq_provider(client, monkeypatch):
+    seen = {}
+
+    def fake_make_client(provider):
+        seen["provider"] = provider
+        raise director.DirectorUnavailable("stop here")
+
+    monkeypatch.setattr(director, "make_client", fake_make_client)
+    r = client.post("/schedule/generate", json={"brief": "x", "provider": "groq"})
+    assert r.status_code == 503
+    assert seen == {"provider": "groq"}

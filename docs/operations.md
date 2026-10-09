@@ -31,6 +31,8 @@ All settings are environment variables (see `.env.example`).
 |---|---|---|
 | `SHOWRUNNER_STORAGE` | `local` | `local` or `s3` (MinIO/S3) |
 | `SHOWRUNNER_S3_ENDPOINT` / `_BUCKET` / `_ACCESS_KEY` / `_SECRET_KEY` / `_REGION` | - | S3 backend |
+| `SHOWRUNNER_API_KEY` | _(empty)_ | When set, POST/PUT/PATCH/DELETE require it as `X-API-Key` or `Authorization: Bearer`; GETs stay open |
+| `SHOWRUNNER_CORS_ORIGINS` | `*` | Comma-separated allowed browser origins |
 | `SHOWRUNNER_BROKER` | _(empty)_ | Celery broker URL; empty runs ingest in-process |
 | `SHOWRUNNER_ENCODE_DIR` | `data/encoded` | True-encode output dir |
 | `SHOWRUNNER_ENCODE_FONT` | _(auto)_ | Branding font path; auto-detected if unset |
@@ -78,6 +80,13 @@ MinIO; flip `SHOWRUNNER_CATALOG_SOURCE=db` to serve ingested content.
   throughput (below).
 - **Control plane** (ingest, scheduling, the AI director) runs separately from
   the data plane and can scale independently; it's not on the viewer path.
+
+- **Access control:** with `SHOWRUNNER_API_KEY` unset, every endpoint is open,
+  which is only appropriate on localhost. Set the key and restrict
+  `SHOWRUNNER_CORS_ORIGINS` before exposing the control plane. The key guards
+  writes (ingest, schedule, AI director, encode, channel management); reads
+  and the demo UI stay public so viewers need no credentials. Serve it over
+  TLS, since the key travels in a header.
 
 ## Performance & the Go origin
 

@@ -13,6 +13,11 @@ from pathlib import Path
 from app.core.timeline import Asset, Segment
 
 
+# Channel ids become directory names under ENCODE_DIR and appear in URLs, so
+# restrict them to a slug that cannot be "..", hidden, or contain separators.
+CHANNEL_ID_PATTERN = r"^[a-z0-9][a-z0-9_-]{0,63}$"
+
+
 class CatalogNotFound(Exception):
     pass
 
