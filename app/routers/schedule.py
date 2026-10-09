@@ -10,6 +10,7 @@ programme. The AI director uses the same write path.
 from __future__ import annotations
 
 from datetime import datetime
+from typing import Literal
 
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, Field
@@ -49,6 +50,8 @@ class ChannelIn(BaseModel):
 class GenerateIn(BaseModel):
     brief: str
     period_seconds: float = Field(default=3600, gt=0)
+    provider: Literal["anthropic", "google", "groq", "meta"] = "anthropic"
+    model: str | None = None  # provider default when omitted
 
 
 def _catalog(session) -> dict:
@@ -147,14 +150,25 @@ def _generate(channel_id: str, body: GenerateIn) -> dict:
     from app.ai import director
 
     try:
-        client = director.make_client()
+        client = director.make_client(body.provider)
     except director.DirectorUnavailable as e:
         raise HTTPException(status_code=503, detail=str(e))
     with session_scope() as s:
         try:
-            result = director.build_schedule(body.brief, body.period_seconds, s, client)
+            result = director.build_schedule(
+                body.brief,
+                body.period_seconds,
+                s,
+                client,
+                provider=body.provider,
+                model=body.model,
+            )
         except director.DirectorError as e:
             raise HTTPException(status_code=422, detail=str(e))
+        except director.DirectorUnavailable as e:
+            raise HTTPException(status_code=503, detail=str(e))
+        except director.DirectorUpstreamError as e:
+            raise HTTPException(status_code=502, detail=str(e))
         _write_schedule(
             s,
             channel_id,
